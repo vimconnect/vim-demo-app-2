@@ -1,70 +1,60 @@
-import { createContext, useCallback, useEffect, useState } from "react";
-import { EHR } from "vim-os-js-browser/types";
-import type { WorkflowEvent } from "@/types/workflowEvent";
+import { createContext, useEffect, useState } from "react";
+import { Order } from "@vimconnect/app-sdk";
 import { useVimOsContext } from "../useVimOsContext";
 import { useAppConfig } from "../useAppConfig";
 
 interface OrderContext {
-  orders: EHR.Order[];
-  orderCreatedEvents: WorkflowEvent<EHR.Order>[];
+  orders: Partial<Order>[];
 }
 
 export const VimOSOrdersContext = createContext<OrderContext>({
   orders: [],
-  orderCreatedEvents: [],
 });
+
+/**
+ * Orders have no context key. They arrive one at a time on these events, both
+ * of which require the order to already be on screen, so this list is what the
+ * provider has looked at this session — not every order on the chart.
+ */
+const ORDER_EVENTS = ["order_select", "order_sign"] as const;
+
+const orderKey = (order: Partial<Order>, fallback: number) =>
+  order.identifiers?.ehrOrderId ?? String(fallback);
 
 export const VimOSOrdersProvider: React.FC<React.PropsWithChildren> = ({
   children,
 }) => {
   const { updateNotification } = useAppConfig();
   const vimOS = useVimOsContext();
-  const [orders, setOrders] = useState<EHR.Order[]>([]);
-  const [orderCreatedEvents, setOrderCreatedEvents] = useState<
-    WorkflowEvent<EHR.Order>[]
-  >([]);
+  const [orders, setOrders] = useState<Partial<Order>[]>([]);
 
   useEffect(() => {
-    vimOS.ehr.subscribe("orders", (data) => {
-      setOrders(data ?? []);
-      updateNotification("orders", data ? 1 : 0);
+    return vimOS.ehr.workflow.on([...ORDER_EVENTS], (event) => {
+      const order = event.entities?.order;
+      if (!order) return;
+
+      setOrders((previous) => {
+        const incomingKey = orderKey(order, previous.length);
+        const existing = previous.findIndex(
+          (candidate, index) => orderKey(candidate, index) === incomingKey
+        );
+        if (existing === -1) return [order, ...previous];
+
+        const next = [...previous];
+        next[existing] = order;
+        return next;
+      });
     });
-
-    return () => {
-      vimOS.ehr.unsubscribe("orders", (data) => setOrders(data ?? []));
-    };
-  }, [vimOS, updateNotification]);
-
-  const dismissOrderCreated = useCallback((id: string) => {
-    setOrderCreatedEvents((prev) => prev.filter((e) => e.id !== id));
-  }, []);
+  }, [vimOS]);
 
   useEffect(() => {
-    const unsubscribe = vimOS.ehr.workflowEvents.order.onOrderCreated(
-      (order: EHR.Order) => {
-        const orderCreatedEvent: WorkflowEvent<EHR.Order> = {
-          id: order?.identifiers?.ehrOrderId ?? "",
-          receivedAt: new Date(),
-          payload: order,
-          dismiss: () => dismissOrderCreated(orderCreatedEvent.id),
-        };
-        setOrderCreatedEvents((prev) => {
-          const exists = prev.some((e) => e.id === orderCreatedEvent.id);
-          const next = exists
-            ? prev
-            : [orderCreatedEvent, ...prev].slice(0, 10);
-          return next;
-        });
-      }
-    );
-    return () => unsubscribe();
-  }, [vimOS, dismissOrderCreated]);
+    updateNotification("orders", orders.length ? 1 : 0);
+  }, [orders, updateNotification]);
 
   return (
     <VimOSOrdersContext.Provider
       value={{
         orders,
-        orderCreatedEvents,
       }}
     >
       {children}

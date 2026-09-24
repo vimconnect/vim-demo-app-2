@@ -1,6 +1,6 @@
 import { useAppConfig } from '@/hooks/useAppConfig';
 import { Fragment } from 'react';
-import { EHR } from 'vim-os-js-browser/types';
+import { Order } from '@vimconnect/app-sdk';
 import {
   EntityFieldContent,
   EntityFieldReadonlyList,
@@ -15,7 +15,7 @@ import { ProviderSection } from '../Provider';
 import { formatContentDate } from '@/utils/formatContentDate';
 
 interface OrderContentProps {
-  order: EHR.Order;
+  order: Partial<Order>;
 }
 
 export const OrderContent: React.FC<OrderContentProps> = ({ order }) => {
@@ -70,61 +70,45 @@ export const OrderContent: React.FC<OrderContentProps> = ({ order }) => {
             </EntityFieldContent>
           </EntitySectionContent>
           <Separator className="mb-1" />
-          <EntitySectionTitle title="Procedure Codes" />
-          <EntitySectionContent>
-            <EntityFieldContent>
-              <EntityFieldReadonlyList list={order?.procedureCodes?.procedureCodes} />
-            </EntityFieldContent>
-          </EntitySectionContent>
-          <Separator className="mb-1" />
-          <EntitySectionTitle title="Loinc Codes" />
-          <EntitySectionContent>
-            <EntityFieldContent>
-              <EntityFieldReadonlyList list={order?.loincCodes} />
-            </EntityFieldContent>
-          </EntitySectionContent>
-          <Separator className="mb-1" />
           {order?.basicInformation?.type === 'RX' && (
             <>
               <EntitySectionTitle title="Medications" />
-              {!order?.medications || !order.medications.length ? (
+              {!order?.medication ? (
                 <EntityFieldReadonlyList list={[]} />
               ) : (
-                order.medications.map((medication) => (
-                  <Fragment key={medication.basicInformation?.ndcCode}>
+                [order.medication].map((medication) => (
+                  <Fragment key={medication.ndcCode}>
                     <EntitySectionTitle title="Medication" />
                     <EntitySectionContent>
                       <EntityFieldContent>
                         <EntityFieldTitle title="Medication Name" />
                         <EntityFieldReadonlyText
-                          text={medication.basicInformation?.medicationName ?? '--'}
+                          text={medication.medicationName ?? '--'}
                         />
                       </EntityFieldContent>
                       <EntityFieldContent>
                         <EntityFieldTitle title="NDC code" />
                         <EntityFieldReadonlyText
-                          text={medication.basicInformation?.ndcCode ?? '--'}
+                          text={medication.ndcCode ?? '--'}
                         />
                       </EntityFieldContent>
                       <EntityFieldContent>
                         <EntityFieldTitle title="Form" />
-                        <EntityFieldReadonlyText text={medication.dosage?.form?.unit ?? '--'} />
+                        <EntityFieldReadonlyText text={medication.form ?? '--'} />
                       </EntityFieldContent>
                       <EntityFieldContent>
-                        <EntityFieldTitle title="Strength value" />
-                        <EntityFieldReadonlyText
-                          text={medication.dosage?.strength?.value ?? '--'}
-                        />
+                        <EntityFieldTitle title="Strength" />
+                        <EntityFieldReadonlyText text={medication.strength ?? '--'} />
                       </EntityFieldContent>
                       <EntityFieldContent>
                         <EntityFieldTitle title="Quantity value" />
                         <EntityFieldReadonlyText
-                          text={medication.dosage?.quantity?.value ?? '--'}
+                          text={medication.quantity?.value?.toString() ?? '--'}
                         />
                       </EntityFieldContent>
                       <EntityFieldContent>
                         <EntityFieldTitle title="Quantity unit" />
-                        <EntityFieldReadonlyText text={medication.dosage?.quantity?.unit ?? '--'} />
+                        <EntityFieldReadonlyText text={medication.quantity?.unit ?? '--'} />
                       </EntityFieldContent>
                     </EntitySectionContent>
                   </Fragment>

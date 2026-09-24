@@ -1,4 +1,4 @@
-import { EHR } from "vim-os-js-browser/types";
+import { Referral } from "@vimconnect/app-sdk";
 import { ProviderSection } from "../Provider";
 import { ReferralUpdateField } from "../update-fields/updateFieldWrapper";
 import { SelectField } from "../update-fields/selectField";
@@ -26,7 +26,7 @@ export const TargetProvider = () => {
       <h3 className="text-xs mt-2 mb-1 font-semibold">
         Target Provider Full Name
       </h3>
-      <ReferralUpdateField<EHR.UpdatableProvider | undefined>
+      <ReferralUpdateField<Referral["targetProvider"] | undefined>
         value={referral?.targetProvider}
         canUpdateParam={{
           targetProvider: true,

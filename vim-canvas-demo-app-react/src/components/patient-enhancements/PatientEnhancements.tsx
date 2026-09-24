@@ -4,16 +4,14 @@ import { useVimOSPatient } from "@/hooks/usePatient";
 import { ProblemList } from "./ProblemList";
 import { MedicationList } from "./MedicationList";
 import { AllergyList } from "./AllergyList";
-import { EHR } from "vim-os-js-browser/types";
+import { Allergy, Diagnosis, Medication } from "@vimconnect/app-sdk";
+import { useVimOsContext } from "@/hooks/useVimOsContext";
 import { capitalize } from "@/lib/utils";
 import { Loading } from "../ui/loading";
 
 type EnhancementName = "problem list" | "medication list" | "allergy list";
 
-type EnhancementFunction =
-  | "getProblemList"
-  | "getMedicationList"
-  | "getAllergyList";
+type EnhancementFunction = "getProblems" | "getMedications" | "getAllergies";
 
 type Enhancement = {
   name: EnhancementName;
@@ -23,25 +21,26 @@ type Enhancement = {
 const enhancements: Enhancement[] = [
   {
     name: "problem list",
-    function: "getProblemList",
+    function: "getProblems",
   },
   {
     name: "medication list",
-    function: "getMedicationList",
+    function: "getMedications",
   },
   {
     name: "allergy list",
-    function: "getAllergyList",
+    function: "getAllergies",
   },
 ];
 
 export const PatientEnhancements = () => {
   const { patient } = useVimOSPatient();
+  const vimOS = useVimOsContext();
   const [enhancementResult, setEnhancementResult] = useState<
     Partial<{
-      "problem list": EHR.PatientDiagnosis[];
-      "medication list": EHR.PatientMedication[];
-      "allergy list": EHR.Allergy[];
+      "problem list": Diagnosis[];
+      "medication list": Medication[];
+      "allergy list": Allergy[];
     }>
   >({});
   const [loadingStates, setLoadingStates] = useState<
@@ -66,23 +65,23 @@ export const PatientEnhancements = () => {
       }));
 
       try {
-        if (enhancement.function === "getProblemList") {
-          const result = await patient.getProblemList();
+        if (enhancement.function === "getProblems") {
+          const result = await vimOS.ehr.api.patient.getProblems();
           setEnhancementResult((prev) => ({
             ...prev,
-            "problem list": result,
+            "problem list": result.data ?? [],
           }));
-        } else if (enhancement.function === "getMedicationList") {
-          const result = await patient.getMedicationList();
+        } else if (enhancement.function === "getMedications") {
+          const result = await vimOS.ehr.api.patient.getMedications();
           setEnhancementResult((prev) => ({
             ...prev,
-            "medication list": result,
+            "medication list": result.data ?? [],
           }));
-        } else if (enhancement.function === "getAllergyList") {
-          const result = await patient.getAllergyList();
+        } else if (enhancement.function === "getAllergies") {
+          const result = await vimOS.ehr.api.patient.getAllergies();
           setEnhancementResult((prev) => ({
             ...prev,
-            "allergy list": result,
+            "allergy list": result.data ?? [],
           }));
         } else {
           throw new Error(
@@ -109,7 +108,7 @@ export const PatientEnhancements = () => {
         }));
       }
     },
-    [patient]
+    [patient, vimOS]
   );
 
   return (

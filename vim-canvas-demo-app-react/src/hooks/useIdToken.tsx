@@ -1,13 +1,10 @@
 import { useEffect, useState } from "react";
 import { useVimOsContext } from "./useVimOsContext";
-import { SessionContext } from "vim-os-js-browser/types";
 
 export const useIdToken = () => {
   const { sessionContext } = useVimOsContext();
 
-  const [idToken, setIdToken] = useState<
-    SessionContext.GetIdTokenResponse["idToken"] | undefined
-  >();
+  const [idToken, setIdToken] = useState<string | undefined>();
 
   useEffect(() => {
     if (sessionContext) {

@@ -9,23 +9,9 @@ import { DiagnosisMultiSelectField } from '../update-fields/diagnosisMultiSelect
 import { TextareaField } from '../update-fields/textAreaField';
 import { EncounterUpdateField } from '../update-fields/updateFieldWrapper';
 import { FormInputs, useEncounterFormContext } from './encounter.form';
-import { useEffect, useMemo, useState, useRef, useCallback } from 'react';
+import { useEffect, useMemo, useCallback } from 'react';
 import { useWatch } from 'react-hook-form';
-import { Button } from '../ui/button';
-import { Pencil1Icon } from '@radix-ui/react-icons';
-import { SmallActionButtons } from '../ui/smallActionButtons';
-import { TextareaWithAdornment } from '../ui/textareaWithAdornment';
-import { EHR } from 'vim-os-js-browser/types';
 
-/**
- * Type definition for a diagnosis code with note (API response format)
- * Matches the structure returned by the API
- */
-interface DiagnosisCodeWithNote {
-  code: string;
-  description?: string;
-  note?: string;
-}
 
 /**
  * Type definition for a diagnosis code in form control format
@@ -44,7 +30,6 @@ interface FormDiagnosisCode {
 interface DiagnosisCodePayload {
   code: string;
   description: string;
-  note?: string;
 }
 
 /**
@@ -67,15 +52,10 @@ const DEFAULT_DIAGNOSIS_CODES = [
  */
 const DIAGNOSIS_CODES_CAN_UPDATE_PARAM = {
   assessment: {
-    diagnosisCodes: true,
+    diagnoses: true,
   },
 } as const;
 
-const DIAGNOSIS_CODES_NOTES_CAN_UPDATE_PARAM = {
-  assessment: {
-    diagnosisCodesNotes: true,
-  },
-} as const;
 
 const GENERAL_NOTES_CAN_UPDATE_PARAM = {
   assessment: {
@@ -94,14 +74,7 @@ const GENERAL_NOTES_CAN_UPDATE_PARAM = {
 const createDiagnosisCodeEntry = (
   code: string,
   description: string,
-  note?: string,
-): DiagnosisCodePayload => {
-  return {
-    code,
-    description,
-    ...(note && { note }),
-  };
-};
+): DiagnosisCodePayload => ({ code, description });
 
 /**
  * Creates the full payload for updating diagnosis codes.
@@ -111,12 +84,8 @@ const createDiagnosisCodeEntry = (
 const createDiagnosisCodesUpdatePayload = (
   codes: DiagnosisCodePayload | DiagnosisCodePayload[],
 ) => {
-  const diagnosisCodes = Array.isArray(codes) ? codes : [codes];
-  return {
-    assessment: {
-      diagnosisCodes: diagnosisCodes as [DiagnosisCodePayload, ...DiagnosisCodePayload[]],
-    },
-  };
+  const diagnoses = Array.isArray(codes) ? codes : [codes];
+  return { assessment: { diagnoses } };
 };
 
 // ============================================================================
@@ -127,262 +96,22 @@ const createDiagnosisCodesUpdatePayload = (
  * Editable note field for diagnosis codes (both saved and new)
  * Provides save/cancel functionality with optional prefix adornment for saved notes
  */
-const DiagnosisCodeNoteField = ({
-  originalNote,
-  currentNote,
-  onChange,
-  onSave,
-  onCancel,
-  disabled,
-  requireNoteForSave = false,
-}: {
-  originalNote?: string;
-  currentNote: string;
-  onChange: (note: string) => void;
-  onSave: () => void;
-  onCancel: () => void;
-  disabled?: boolean;
-  requireNoteForSave?: boolean;
-}) => {
-  const [editMode, setEditMode] = useState(false);
-  const [key, setKey] = useState<number>(+new Date());
-  const textAreaRef = useRef<HTMLTextAreaElement>(null);
-
-  useEffect(() => {
-    if (editMode) {
-      // Focus textarea when entering edit mode
-      setTimeout(() => textAreaRef.current?.focus(), 0);
-    }
-  }, [editMode]);
-
-  const turnOnEditMode = () => {
-    setEditMode(true);
-  };
-
-  const handleCancel = () => {
-    setEditMode(false);
-    onCancel(); // Clear the note
-    setKey(+new Date());
-  };
-
-  const handleSave = () => {
-    setEditMode(false);
-    onSave(); // Submit to API
-    setKey(+new Date());
-  };
-
-  return (
-    <div className="flex w-full relative justify-between">
-      <div className="relative w-full">
-        <TextareaWithAdornment
-          prefixAdornment={originalNote}
-          key={key}
-          placeholder="Add note here"
-          value={currentNote}
-          onChange={(e) => onChange(e.target.value)}
-          disabled={!editMode || disabled}
-          ref={textAreaRef}
-        />
-        {!editMode && (
-          <div
-            onClick={() => !disabled && turnOnEditMode()}
-            className="absolute bottom-0 left-0 w-full h-[50px] cursor-text"
-          />
-        )}
-      </div>
-      {!editMode ? (
-        <Button
-          size="sm"
-          className="absolute right-0 bottom-0 h-7 w-7 p-0 rounded-tr-none rounded-bl-none"
-          onClick={turnOnEditMode}
-          disabled={disabled}
-        >
-          <Pencil1Icon />
-        </Button>
-      ) : (
-        <SmallActionButtons
-          className="absolute -right-[16px] bottom-0"
-          crossClassName="rounded-l-md rounded-es-none border-l-1"
-          checkClassName="rounded-se-none"
-          isCheckBtnDisabled={requireNoteForSave && (!currentNote || currentNote.length === 0)}
-          onCrossClick={handleCancel}
-          onCheckClick={handleSave}
-        />
-      )}
-    </div>
-  );
-};
 
 /**
  * Wrapper component that combines EncounterUpdateField with DiagnosisCodeNoteField
  * Handles individual saving of diagnosis code notes to the API
  */
-const DiagnosisCodeNoteFieldWithUpdate = <T,>({
-  value,
-  valueToUpdatePayload,
-  originalNote,
-  currentNote,
-  onChange,
-  onSaveSuccess,
-  onCancel,
-  requireNoteForSave = false,
-}: {
-  value: T;
-  valueToUpdatePayload: (value: T) => EHR.UpdateEncounterParams;
-  originalNote?: string;
-  currentNote: string;
-  onChange: (note: string) => void;
-  onSaveSuccess: () => void;
-  onCancel: () => void;
-  requireNoteForSave?: boolean;
-}) => {
-  return (
-    <EncounterUpdateField<T>
-      value={value}
-      canUpdateParam={DIAGNOSIS_CODES_NOTES_CAN_UPDATE_PARAM}
-      valueToUpdatePayload={valueToUpdatePayload}
-      render={({ field }) => (
-        <DiagnosisCodeNoteField
-          originalNote={originalNote}
-          currentNote={currentNote}
-          onChange={onChange}
-          onSave={() => {
-            field.onChange(value);
-            onSaveSuccess();
-          }}
-          onCancel={onCancel}
-          disabled={field.disabled}
-          requireNoteForSave={requireNoteForSave}
-        />
-      )}
-    />
-  );
-};
 
 /**
  * Component to display saved diagnosis codes from the encounter
  * Each code has an editable note field with individual save functionality
  * Note changes can be saved individually or via "Push all to EHR"
  */
-const SavedDiagnosisCodesList = ({
-  diagnosisCodes,
-  formCodeUpdates,
-  onNoteChange,
-}: {
-  diagnosisCodes: DiagnosisCodeWithNote[];
-  formCodeUpdates: Map<string, FormDiagnosisCode>;
-  onNoteChange: (code: DiagnosisCodeWithNote, note: string) => void;
-}) => {
-  if (diagnosisCodes.length === 0) {
-    return null;
-  }
-
-  return (
-    <div className="space-y-4 mb-4">
-      {diagnosisCodes.map((item, index) => {
-        // Check if there's an updated note in form control
-        const formUpdate = formCodeUpdates.get(item.code);
-        // Current note value is only from form updates, not from saved note
-        const currentNote = formUpdate?.note ?? '';
-
-        return (
-          <div key={index} className="border rounded-md p-3">
-            {/* Display diagnosis code and description */}
-            <div className="mb-2">
-              <p className="text-sm font-semibold">
-                {item.code} - {item.description}
-              </p>
-            </div>
-
-            {/* Editable note field with individual save functionality */}
-            <div className="mt-2">
-              <DiagnosisCodeNoteFieldWithUpdate
-                value={currentNote || item.note}
-                valueToUpdatePayload={(noteValue) =>
-                  createDiagnosisCodesUpdatePayload(
-                    createDiagnosisCodeEntry(
-                      item.code,
-                      item.description || '',
-                      noteValue || undefined,
-                    ),
-                  )
-                }
-                originalNote={item.note}
-                currentNote={currentNote}
-                onChange={(newNote) => onNoteChange(item, newNote)}
-                onSaveSuccess={() => {
-                  // Clear the updated note after successful save
-                  onNoteChange(item, '');
-                }}
-                onCancel={() => {
-                  // Clear the updated note (reset to empty)
-                  onNoteChange(item, '');
-                }}
-                requireNoteForSave={true}
-              />
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
-};
 
 /**
  * Component to display new diagnosis codes (not yet saved to encounter)
  * Each code has an editable note field with individual save functionality
  */
-const NewDiagnosisCodesList = ({
-  newCodes,
-  onNoteChange,
-  onRemoveCode,
-}: {
-  newCodes: FormDiagnosisCode[];
-  onNoteChange: (codeId: string, note: string) => void;
-  onRemoveCode: (codeId: string) => void;
-}) => {
-  if (newCodes.length === 0) {
-    return null;
-  }
-
-  return (
-    <div className="space-y-4 mt-4">
-      {newCodes.map((code, index) => (
-        <div key={index} className="border rounded-md p-3 bg-blue-50">
-          {/* Display code and description */}
-          <div className="mb-2">
-            <p className="text-sm font-semibold">
-              {code.id} - {code.label}
-            </p>
-          </div>
-
-          {/* Editable note field with save/cancel buttons */}
-          <div className="mt-2">
-            <DiagnosisCodeNoteFieldWithUpdate
-              value={code}
-              valueToUpdatePayload={(item) =>
-                createDiagnosisCodesUpdatePayload(
-                  createDiagnosisCodeEntry(item.id, item.label, item.note),
-                )
-              }
-              currentNote={code.note || ''}
-              onChange={(newNote) => onNoteChange(code.id, newNote)}
-              onSaveSuccess={() => {
-                // Remove code from form control after successful save
-                onRemoveCode(code.id);
-              }}
-              onCancel={() => {
-                // Clear the note
-                onNoteChange(code.id, '');
-              }}
-              requireNoteForSave={false}
-            />
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-};
 
 /**
  * Assessment component - manages diagnosis codes and general notes
@@ -403,31 +132,23 @@ export const EncounterAssessment = () => {
 
   // Saved diagnosis codes from the API - memoized to prevent unnecessary re-renders
   const savedDiagnosisCodes = useMemo(
-    () => assessment?.diagnosisCodes || [],
-    [assessment?.diagnosisCodes],
+    () => assessment?.diagnoses || [],
+    [assessment?.diagnoses],
   );
 
   // Separate new codes from saved code updates
   // New codes: codes in form that are NOT in saved codes
   // Saved code updates: codes in form that ARE in saved codes (editing notes)
   const { newCodes, savedCodeIds } = useMemo(() => {
-    const savedIds = new Set(savedDiagnosisCodes.map((code) => code.code));
+    const savedIds = new Set(
+      savedDiagnosisCodes.map((code) => code.code).filter((code): code is string => Boolean(code)),
+    );
     const newCodesArray = formDiagnosisCodes.filter(
       (code: FormDiagnosisCode) => !savedIds.has(code.id),
     );
     return { newCodes: newCodesArray, savedCodeIds: savedIds };
   }, [formDiagnosisCodes, savedDiagnosisCodes]);
 
-  // Create a map of form updates for saved codes
-  const formCodeUpdatesMap = useMemo(() => {
-    const map = new Map<string, FormDiagnosisCode>();
-    formDiagnosisCodes.forEach((code: FormDiagnosisCode) => {
-      if (code.note) {
-        map.set(code.id, code);
-      }
-    });
-    return map;
-  }, [formDiagnosisCodes]);
 
   // Get currently selected options for the multi-select field (only new codes)
   const selectedOptions = useMemo(
@@ -468,14 +189,9 @@ export const EncounterAssessment = () => {
             return true;
           }
 
-          // For new codes, check if they've been saved
-          // If the code now exists in saved codes with the same note, remove it
-          const savedCode = savedDiagnosisCodes.find((sc) => sc.code === formCode.id);
-          if (savedCode) {
-            const formNote = formCode.note || '';
-            const savedNote = savedCode.note || '';
-            // Only remove if it's a perfect match (saved successfully)
-            return formNote !== savedNote;
+          // For new codes: once the code shows up in saved codes it has landed.
+          if (savedDiagnosisCodes.some((sc) => sc.code === formCode.id)) {
+            return false;
           }
 
           // Keep new codes that aren't saved yet
@@ -528,86 +244,8 @@ export const EncounterAssessment = () => {
     [formDiagnosisCodes, savedDiagnosisCodes, setValue],
   );
 
-  /**
-   * Handles note updates for a specific diagnosis code (new codes only)
-   * Updates the note in the form control while preserving saved code updates
-   */
-  const handleNoteChange = useCallback(
-    (codeId: string, noteValue: string) => {
-      const updatedCodes = formDiagnosisCodes.map((code: FormDiagnosisCode) => {
-        if (code.id === codeId) {
-          return { ...code, note: noteValue };
-        }
-        return code;
-      });
-      // Update form control and mark as dirty to enable "Push all to EHR" button
-      setValue('diagnosisCodes', updatedCodes, { shouldDirty: true });
-    },
-    [formDiagnosisCodes, setValue],
-  );
 
-  /**
-   * Handles note updates for saved diagnosis codes
-   * Adds/updates the code in form control to track the change
-   * Removes the code if the note is empty (no change to save)
-   */
-  const handleSavedCodeNoteChange = useCallback(
-    (savedCode: DiagnosisCodeWithNote, noteValue: string) => {
-      // If note is empty, remove this saved code from form control
-      if (!noteValue || noteValue.trim().length === 0) {
-        const updatedCodes = formDiagnosisCodes.filter(
-          (code: FormDiagnosisCode) => code.id !== savedCode.code,
-        );
-        setValue('diagnosisCodes', updatedCodes.length > 0 ? updatedCodes : null, {
-          shouldDirty: updatedCodes.length > 0,
-        });
-        return;
-      }
 
-      // Check if this code is already in the form control
-      const existingIndex = formDiagnosisCodes.findIndex(
-        (code: FormDiagnosisCode) => code.id === savedCode.code,
-      );
-
-      let updatedCodes: FormDiagnosisCode[];
-      if (existingIndex >= 0) {
-        // Update existing entry
-        updatedCodes = formDiagnosisCodes.map((code: FormDiagnosisCode, index: number) => {
-          if (index === existingIndex) {
-            return { ...code, note: noteValue };
-          }
-          return code;
-        });
-      } else {
-        // Add new entry for this saved code
-        updatedCodes = [
-          ...formDiagnosisCodes,
-          {
-            id: savedCode.code,
-            label: savedCode.description || '',
-            note: noteValue,
-          },
-        ];
-      }
-
-      // Update form control and mark as dirty
-      setValue('diagnosisCodes', updatedCodes, { shouldDirty: true });
-    },
-    [formDiagnosisCodes, setValue],
-  );
-
-  /**
-   * Removes a code from form control after individual save
-   */
-  const handleRemoveCodeFromForm = useCallback(
-    (codeId: string) => {
-      const updatedCodes = formDiagnosisCodes.filter((c: FormDiagnosisCode) => c.id !== codeId);
-      setValue('diagnosisCodes', updatedCodes.length > 0 ? updatedCodes : null, {
-        shouldDirty: updatedCodes.length > 0,
-      });
-    },
-    [formDiagnosisCodes, setValue],
-  );
 
   // ============================================================================
   // EFFECTS
@@ -630,14 +268,9 @@ export const EncounterAssessment = () => {
             return true;
           }
 
-          // For new codes, check if they've been saved
-          // If the code now exists in saved codes with the same note, remove it
-          const savedCode = savedDiagnosisCodes.find((sc) => sc.code === formCode.id);
-          if (savedCode) {
-            const formNote = formCode.note || '';
-            const savedNote = savedCode.note || '';
-            // Only remove if it's a perfect match (saved successfully)
-            return formNote !== savedNote;
+          // For new codes: once the code shows up in saved codes it has landed.
+          if (savedDiagnosisCodes.some((sc) => sc.code === formCode.id)) {
+            return false;
           }
 
           // Keep new codes that aren't saved yet
@@ -662,11 +295,17 @@ export const EncounterAssessment = () => {
       <EntitySectionContent>
         {/* Saved diagnosis codes section */}
         <EntityFieldContent>
-          <SavedDiagnosisCodesList
-            diagnosisCodes={savedDiagnosisCodes}
-            formCodeUpdates={formCodeUpdatesMap}
-            onNoteChange={handleSavedCodeNoteChange}
-          />
+          {savedDiagnosisCodes.length > 0 && (
+            <div className="space-y-2 mb-4">
+              {savedDiagnosisCodes.map((item, index) => (
+                <div key={index} className="border rounded-md p-3">
+                  <p className="text-sm font-semibold">
+                    {item.code} - {item.description}
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
 
           {/* Multi-select dropdown for adding new diagnosis codes */}
           {/* EncounterUpdateField wrapper enables bulk save via check button */}
@@ -675,7 +314,7 @@ export const EncounterAssessment = () => {
             canUpdateParam={DIAGNOSIS_CODES_CAN_UPDATE_PARAM}
             valueToUpdatePayload={(items) =>
               createDiagnosisCodesUpdatePayload(
-                items.map((item) => createDiagnosisCodeEntry(item.id, item.label, item.note)),
+                items.map((item) => createDiagnosisCodeEntry(item.id, item.label)),
               )
             }
             render={({ field }) => (
@@ -699,11 +338,17 @@ export const EncounterAssessment = () => {
         </EntityFieldContent>
 
         {/* New diagnosis codes section */}
-        <NewDiagnosisCodesList
-          newCodes={newCodes}
-          onNoteChange={handleNoteChange}
-          onRemoveCode={handleRemoveCodeFromForm}
-        />
+        {newCodes.length > 0 && (
+          <div className="space-y-2 mt-4">
+            {newCodes.map((code: FormDiagnosisCode, index: number) => (
+              <div key={index} className="border rounded-md p-3 bg-blue-50">
+                <p className="text-sm font-semibold">
+                  {code.id} - {code.label}
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* General notes section */}
         <EntityFieldContent>

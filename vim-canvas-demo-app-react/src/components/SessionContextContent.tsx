@@ -35,7 +35,7 @@ export const SessionContextContent = () => {
   return (
     <div className="w-full">
       {jsonMode ? (
-        <JSONView value={sessionContext} />
+        <JSONView value={sessionContext ?? undefined} />
       ) : (
         <>
           <EntitySectionTitle title="Session Context" />
@@ -46,43 +46,10 @@ export const SessionContextContent = () => {
           <Separator className="mb-1" />
           <EntitySectionTitle title="Identifiers" />
           <EntitySectionContent>
-            <EntityFieldTitle title="EHR username" />
-            <EntityFieldReadonlyText
-              text={sessionContext?.user?.identifiers?.ehrUsername}
-            />
-            <EntityFieldTitle title="NPI" />
-            <EntityFieldReadonlyText
-              text={sessionContext?.user?.identifiers?.npi}
-            />
             <EntityFieldTitle title="Vim user ID" />
-            <EntityFieldReadonlyText
-              text={sessionContext?.user?.identifiers?.vimUserID}
-            />
-            <EntityFieldTitle title="Role(s)" />
-            <EntityFieldReadonlyText
-              className="whitespace-pre-line"
-              text={sessionContext?.user?.identifiers?.roles?.join("\n")}
-            />
-          </EntitySectionContent>
-          <Separator className="mb-1" />
-          <EntitySectionTitle title="Demographics" />
-          <EntitySectionContent>
-            <EntityFieldTitle title="First name" />
-            <EntityFieldReadonlyText
-              text={sessionContext?.user?.demographics?.firstName}
-            />
-            <EntityFieldTitle title="Last name" />
-            <EntityFieldReadonlyText
-              text={sessionContext?.user?.demographics?.lastName}
-            />
-          </EntitySectionContent>
-          <Separator className="mb-1" />
-          <EntitySectionTitle title="Contact Information" />
-          <EntitySectionContent>
-            <EntityFieldTitle title="Email" />
-            <EntityFieldReadonlyText
-              text={sessionContext?.user?.contactInfo?.email}
-            />
+            <EntityFieldReadonlyText text={sessionContext?.userId} />
+            <EntityFieldTitle title="Device ID" />
+            <EntityFieldReadonlyText text={sessionContext?.deviceId} />
           </EntitySectionContent>
           <Separator className="mb-1" />
           <EntitySectionTitle title="EHR Information" />
@@ -91,20 +58,12 @@ export const SessionContextContent = () => {
             <EntityFieldReadonlyText text={sessionContext?.ehrType} />
           </EntitySectionContent>
           <Separator className="mb-1" />
-          <EntitySectionTitle title="Organization" />
+          <EntitySectionTitle title="Account" />
           <EntitySectionContent>
-            <EntityFieldTitle title="Organization name" />
-            <EntityFieldReadonlyText
-              text={sessionContext?.organization?.identifiers?.name}
-            />
-            <EntityFieldTitle title="Organization ID" />
-            <EntityFieldReadonlyText
-              text={sessionContext?.organization?.identifiers?.id}
-            />
-            <EntityFieldTitle title="TIN" />
-            <EntityFieldReadonlyText
-              text={sessionContext?.organization?.identifiers?.tin.join(", ")}
-            />
+            <EntityFieldTitle title="Account name" />
+            <EntityFieldReadonlyText text={sessionContext?.account?.name} />
+            <EntityFieldTitle title="Account ID" />
+            <EntityFieldReadonlyText text={sessionContext?.account?.id} />
           </EntitySectionContent>
           <EntitySectionTitle title="Get ID token" />
           <EntitySectionContent>

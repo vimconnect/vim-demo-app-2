@@ -1,4 +1,4 @@
 import { createContext } from "react";
-import { SDK } from "vim-os-js-browser/types";
+import { VimSDK } from "@vimconnect/app-sdk";
 
-export const VimOSContext = createContext<SDK>({} as SDK);
+export const VimOSContext = createContext<VimSDK>({} as VimSDK);

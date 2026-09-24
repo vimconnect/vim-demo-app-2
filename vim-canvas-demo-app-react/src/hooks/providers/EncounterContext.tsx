@@ -1,10 +1,10 @@
 import { createContext, useEffect, useState } from "react";
-import { EHR } from "vim-os-js-browser/types";
+import { Encounter } from "@vimconnect/app-sdk";
 import { useVimOsContext } from "../useVimOsContext";
 import { useAppConfig } from "../useAppConfig";
 
 interface EncounterContext {
-  encounter: EHR.Encounter | undefined;
+  encounter: Partial<Encounter> | undefined;
 }
 
 export const VimOSEncounterContext = createContext<EncounterContext>({
@@ -16,20 +16,20 @@ export const VimOSEncounterProvider: React.FC<React.PropsWithChildren> = ({
 }) => {
   const { updateNotification } = useAppConfig();
   const vimOS = useVimOsContext();
-  const [encounter, setEncounter] = useState<EHR.Encounter | undefined>(
+  const [encounter, setEncounter] = useState<Partial<Encounter> | undefined>(
     undefined
   );
 
   useEffect(() => {
-    vimOS.ehr.subscribe("encounter", (data) => {
-      setEncounter(data);
-      updateNotification("encounter", data ? 1 : 0);
-    });
+    return vimOS.ehr.context.onChange(
+      "encounter_open:encounter",
+      (_previous, current) => setEncounter(current?.fields)
+    );
+  }, [vimOS]);
 
-    return () => {
-      vimOS.ehr.unsubscribe("encounter", setEncounter);
-    };
-  }, [vimOS, updateNotification]);
+  useEffect(() => {
+    updateNotification("encounter", encounter ? 1 : 0);
+  }, [encounter, updateNotification]);
 
   return (
     <VimOSEncounterContext.Provider

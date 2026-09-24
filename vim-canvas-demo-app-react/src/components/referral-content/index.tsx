@@ -2,7 +2,6 @@ import { JSONView } from "@/components/ui/jsonView";
 import { Separator } from "@/components/ui/separator";
 import { useAppConfig } from "@/hooks/useAppConfig";
 import { useVimOSReferral } from "@/hooks/useReferral";
-import { EHR } from "vim-os-js-browser/types";
 import { FormProvider, useWatch } from "react-hook-form";
 import { ProviderSection } from "../Provider";
 import {
@@ -15,7 +14,6 @@ import {
 import { useReferralForm, ReferralFormInputs } from "./referral.form";
 import { ReferralBasicInformation } from "./BasicInformation";
 import { ReferralConditions } from "./Conditions";
-import { ReferralProcedures } from "./Procedures";
 import { TargetProvider } from "./TargetProvider";
 
 import {
@@ -27,6 +25,7 @@ import {
 } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useUpdateReferral } from "@/hooks/useUpdateReferral";
+import { FieldMask } from "@/hooks/writeback";
 import { Button } from "../ui/button";
 import {
   buildReferralPayload,
@@ -42,8 +41,9 @@ export const ReferralContent = () => {
   const { toast } = useToast();
   const { jsonMode } = useAppConfig();
   const { referral } = useVimOSReferral();
-  const { canUpdate, updateReferral } = useUpdateReferral();
   const formProps = useReferralForm();
+  const canUpdateObj: FieldMask = useMemo(() => ({}), []);
+  const { canUpdateParams, updateReferral } = useUpdateReferral(canUpdateObj);
 
   const [enlargedHeader, setEnlargeHeader] = useState(false);
   const [areFieldsDirty, setAreFieldsDirty] = useState(false);
@@ -53,7 +53,7 @@ export const ReferralContent = () => {
     control: formProps.control,
   });
 
-  const canUpdateObj: EHR.CanUpdateReferralParams = useMemo(() => ({}), []);
+
 
   useEffect(() => {
     const changedFields = Object.keys(formProps.formState.dirtyFields);
@@ -79,11 +79,8 @@ export const ReferralContent = () => {
     setComponentKey(+new Date());
   }, [watchedFields, formProps.formState.dirtyFields]);
 
-  const canUpdateResult = canUpdate(canUpdateObj);
-
   const canUpdateNotes = {
-    ...canUpdateResult,
-    canUpdate: areFieldsDirty && canUpdateResult.canUpdate,
+    canUpdate: areFieldsDirty && canUpdateParams,
   };
 
   const onReferralSubmit = async (data: ReferralFormInputs) => {
@@ -153,12 +150,6 @@ export const ReferralContent = () => {
                   text={referral?.identifiers?.ehrReferralId}
                 />
               </EntityFieldContent>
-              <EntityFieldContent>
-                <EntityFieldTitle title="Vim referral ID" />
-                <EntityFieldReadonlyText
-                  text={referral?.identifiers?.vimReferralId}
-                />
-              </EntityFieldContent>
             </EntitySectionContent>
             <Separator className="mb-1" />
 
@@ -184,9 +175,6 @@ export const ReferralContent = () => {
             <Separator className="mb-1" />
 
             <ReferralConditions key={`${componentKey}-conditions`} />
-            <Separator className="mb-1" />
-
-            <ReferralProcedures key={`${componentKey}-procedures`} />
             <Separator className="mb-1" />
 
             <ProviderSection

@@ -8,7 +8,6 @@ import {
 import { CopyIcon, Pencil1Icon } from "@radix-ui/react-icons";
 import { Button } from "@/components/ui/button";
 import { SmallActionButtons } from "@/components/ui/smallActionButtons";
-import { useVimOsContext } from "@/hooks/useVimOsContext";
 import { useToast } from "@/hooks/use-toast";
 import { TextareaWithAdornment } from "@/components/ui/textareaWithAdornment";
 
@@ -28,7 +27,6 @@ export function TextareaField<T extends FieldValues = FieldValues>({
   const { field } = useController(props);
   const { resetField } = useFormContext();
   const [editMode, setEditMode] = useState(false);
-  const vimOs = useVimOsContext();
   const [key, setKey] = useState<number>(+new Date());
   const textAreaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -90,7 +88,7 @@ export function TextareaField<T extends FieldValues = FieldValues>({
           onCheckClick={() => {
             setEditMode(false);
             if (field.disabled) {
-              vimOs.utils.copyToClipboard(field.value ?? "");
+              void navigator.clipboard.writeText(field.value ?? "");
               toast({
                 variant: "default",
                 title: "Copied to clipboard",

@@ -26,3 +26,5 @@ functions/**/*.js
 *.njsproj
 *.sln
 *.sw?
+# TypeScript incremental build cache
+*.tsbuildinfo

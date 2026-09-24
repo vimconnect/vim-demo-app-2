@@ -25,24 +25,17 @@ export const ReferralConditions = () => {
       <EntitySectionTitle title="Conditions" />
       <EntitySectionContent>
         <EntityFieldContent>
-          <EntityFieldReadonlyList list={referral?.conditions?.diagnosis} />
+          <EntityFieldReadonlyList list={referral?.conditions} />
           <ReferralUpdateField<{ id: string; label: string }[]>
             value={undefined}
             canUpdateParam={{
-              conditions: {
-                diagnosis: true,
-              },
+              conditions: true,
             }}
             valueToUpdatePayload={(values) => ({
-              conditions: {
-                diagnosis: values?.map((value) => ({
-                  code: value.id,
-                  description: value.label,
-                })) as [
-                  { code: string; description: string },
-                  ...Array<{ code: string; description: string }>
-                ],
-              },
+              conditions: values?.map((value) => ({
+                code: value.id,
+                description: value.label,
+              })),
             })}
             render={({ field }) => (
               <MultiSelectField

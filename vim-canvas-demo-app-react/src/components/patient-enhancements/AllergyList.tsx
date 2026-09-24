@@ -12,10 +12,10 @@ import {
   EntityFieldReadonlyText,
 } from "../ui/entityContent";
 import { CaretDownIcon } from "@radix-ui/react-icons";
-import { EHR } from "vim-os-js-browser/types";
+import { Allergy } from "@vimconnect/app-sdk";
 
 interface AllergyListProps {
-  allergies: EHR.Allergy[];
+  allergies: Allergy[];
 }
 
 export const AllergyList = ({ allergies }: AllergyListProps) => {
@@ -50,13 +50,13 @@ export const AllergyList = ({ allergies }: AllergyListProps) => {
                   <EntityFieldContent>
                     <EntityFieldTitle title="Allergy" />
                     <EntityFieldReadonlyText
-                      text={allergy.allergyDetails.name || "--"}
+                      text={allergy.allergyDetails?.name || "--"}
                     />
                   </EntityFieldContent>
                   <EntityFieldContent>
                     <EntityFieldTitle title="Criticality" />
                     <EntityFieldReadonlyText
-                      text={allergy.allergyDetails.criticality || "--"}
+                      text={allergy.allergyDetails?.criticality || "--"}
                     />
                   </EntityFieldContent>
                 </div>
@@ -78,7 +78,7 @@ export const AllergyList = ({ allergies }: AllergyListProps) => {
                   <EntityFieldContent>
                     <EntityFieldTitle title="Onset date" />
                     <EntityFieldReadonlyText
-                      text={allergy.basicInformation.onsetDate || "--"}
+                      text={allergy.basicInformation?.onsetDate || "--"}
                     />
                   </EntityFieldContent>
                   <EntityFieldContent>

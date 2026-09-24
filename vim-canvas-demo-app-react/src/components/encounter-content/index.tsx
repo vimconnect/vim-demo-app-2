@@ -5,7 +5,7 @@ import { useAppConfig } from "@/hooks/useAppConfig";
 import { useVimOSEncounter } from "@/hooks/useEncounter";
 import { useUpdateEncounter } from "@/hooks/useUpdateEncounter";
 import { FormProvider, useWatch } from "react-hook-form";
-import { EHR } from "vim-os-js-browser/types";
+import { FieldMask } from "@/hooks/writeback";
 import { ProviderSection } from "../Provider";
 import { Button } from "../ui/button";
 import {
@@ -49,7 +49,7 @@ export const EncounterContent = () => {
    *
    * So we have to manually check if the input fields are dirty and if they can be updated.
    */
-  const canUpdateObj: EHR.CanUpdateEncounterParams = useMemo(
+  const canUpdateObj: FieldMask = useMemo(
     () => ({
       assessment: {},
       objective: {},
@@ -63,8 +63,7 @@ export const EncounterContent = () => {
   );
 
   const { encounter } = useVimOSEncounter();
-  const { canUpdate, updateEncounter, canUpdateParams } =
-    useUpdateEncounter(canUpdateObj);
+  const { updateEncounter, canUpdateParams } = useUpdateEncounter(canUpdateObj);
 
   const formProps = useEncounterForm();
   const watchedFields = useWatch({
@@ -105,8 +104,7 @@ export const EncounterContent = () => {
   }, [watchedFields, formProps.formState.dirtyFields]);
 
   const onEncounterSubmit = async (data: FormInputs) => {
-    const canUpdateNotes = canUpdate(canUpdateObj);
-    const encounterPayload = buildEncounterPayload(data, canUpdateNotes);
+    const encounterPayload = buildEncounterPayload(data);
 
     updateEncounter(encounterPayload)
       .then(() => {
@@ -123,7 +121,7 @@ export const EncounterContent = () => {
         });
       });
 
-    formProps.reset(prepareResetFields(canUpdateNotes));
+    formProps.reset(prepareResetFields());
   };
 
   const headerClasses = useMemo(() => {

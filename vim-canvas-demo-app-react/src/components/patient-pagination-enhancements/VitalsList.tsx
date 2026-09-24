@@ -1,97 +1,43 @@
 import { useState, useCallback } from "react";
 import { Separator } from "../ui/separator";
-import { PaginationProgress } from "../ui/pagination-progress";
 import { Button } from "../ui/button";
 import { EntityFieldTitle, EntityFieldReadonlyText } from "../ui/entityContent";
-import { EHR } from "vim-os-js-browser/types";
-import { PaginationInput } from "./PaginationInput";
+import { Vital } from "@vimconnect/app-sdk";
+import { useVimOsContext } from "@/hooks/useVimOsContext";
 import { useVimOSPatient } from "@/hooks/usePatient";
 import { Collapsible, CollapsibleContent } from "../ui/collapsible";
 import { CollapsibleHeader } from "./CollapsibleHeader";
 
 export const VitalsList = () => {
   const { patient } = useVimOSPatient();
-  const [vitals, setVitals] = useState<{
-    items: EHR.Vitals[];
-    pagination: EHR.PaginationResponse;
-  } | null>(null);
+  const vimOS = useVimOsContext();
+  const [vitals, setVitals] = useState<Vital[] | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | undefined>();
   const [isOpen, setIsOpen] = useState(false);
-  const [searchParams, setSearchParams] = useState<{
-    fromDate: string;
-    untilDate: string;
-  } | null>(null);
 
-  const fetchData = useCallback(
-    async (
-      fromDate: string,
-      untilDate: string,
-      page: number = 1,
-      append: boolean = false
-    ) => {
-      if (!patient) return;
+  /** `getVitals()` takes no date range and returns everything in one call. */
+  const handleActionClick = useCallback(async () => {
+    if (!patient) return;
 
-      setError(undefined);
-      setIsLoading(true);
+    setError(undefined);
+    setIsLoading(true);
+    setIsOpen(true);
 
-      if (page === 1) {
-        setSearchParams({ fromDate, untilDate });
-        setIsOpen(true);
-      }
-
-      try {
-        const result = await patient.getVitals({
-          page,
-          fromDate,
-          untilDate,
-        });
-
-        if (append) {
-          setVitals((prev) => {
-            if (!prev || !result) return prev;
-            return {
-              items: [...prev.items, ...(result.items || [])],
-              pagination: result.pagination || prev.pagination,
-            };
-          });
-        } else {
-          setVitals(result || null);
-        }
-      } catch (err) {
-        const errorMessage =
-          (err as { data?: { message?: string } }).data?.message ===
+    try {
+      const result = await vimOS.ehr.api.patient.getVitals();
+      setVitals(result.data ?? []);
+    } catch (err) {
+      setError(
+        (err as { data?: { message?: string } }).data?.message ===
           "NOT_SUPPORTED_IN_EHR_SYSTEM"
-            ? "Vitals is not supported in this EHR system yet."
-            : `Failed to fetch ${
-                page === 1 ? "" : "next page of "
-              }vitals. Please try again.`;
-        setError(errorMessage);
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    [patient]
-  );
-
-  const handleActionClick = useCallback(
-    async (fromDate: string, untilDate: string) => {
-      await fetchData(fromDate, untilDate, 1, false);
-    },
-    [fetchData]
-  );
-
-  const handleNextPage = useCallback(async () => {
-    if (!vitals || !searchParams) return;
-
-    const nextPage = vitals.pagination.currentPage + 1;
-    await fetchData(
-      searchParams.fromDate,
-      searchParams.untilDate,
-      nextPage,
-      true
-    );
-  }, [fetchData, vitals, searchParams]);
+          ? "Vitals is not supported in this EHR system yet."
+          : "Failed to fetch vitals. Please try again."
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  }, [patient, vimOS]);
 
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen}>
@@ -102,11 +48,13 @@ export const VitalsList = () => {
         onToggle={() => setIsOpen(!isOpen)}
         disabled={!vitals && !error}
       />
-      <PaginationInput
-        actionName="vitals"
-        onActionClick={handleActionClick}
-        isLoading={isLoading}
-      />
+      <Button
+        onClick={handleActionClick}
+        disabled={isLoading || !patient}
+        className="bg-white border-2 border-black text-gray-800 hover:bg-gray-50 px-6 py-2 w-full mt-2"
+      >
+        {isLoading ? "Loading vitals..." : "Get patient vitals"}
+      </Button>
       <CollapsibleContent className="animateCollapsibleContent">
         {(vitals || error) && (
           <div className="mt-2">
@@ -122,19 +70,13 @@ export const VitalsList = () => {
             ) : (
               vitals && (
                 <div className="w-full">
-                  {vitals.pagination.totalItems > 0 && (
-                    <PaginationProgress
-                      currentPage={vitals.pagination.currentPage}
-                      totalPageNumber={vitals.pagination.totalPages}
-                      totalItems={vitals.pagination.totalItems}
-                      numberOfFetchedItems={vitals.items.length}
-                      enhancement="vital"
-                    />
-                  )}
+                  <p className="text-xs text-muted-foreground mb-2">
+                    {vitals.length} vital{vitals.length === 1 ? "" : "s"}
+                  </p>
 
-                  {vitals.items.map((vital, index) => {
+                  {vitals.map((vital, index) => {
                     const { basicInformation } = vital;
-                    const { name, unit, loinc } = basicInformation;
+                    const { name, unit, loinc } = basicInformation ?? {};
                     const { values } = vital;
                     return (
                       <div key={name} className="mb-4">
@@ -166,9 +108,9 @@ export const VitalsList = () => {
                           <h5 className="text-sm font-bold mb-2">
                             Measurements
                           </h5>
-                          {values.map((measurement, measurementIndex) => {
+                          {(values ?? []).map((measurement, measurementIndex) => {
                             const isNotLastMeasurement =
-                              measurementIndex < values.length - 1;
+                              measurementIndex < (values ?? []).length - 1;
 
                             return (
                               <div key={measurement.value} className="mb-2">
@@ -194,7 +136,7 @@ export const VitalsList = () => {
                           })}
                         </div>
 
-                        {index < vitals.items.length - 1 && (
+                        {index < vitals.length - 1 && (
                           <Separator className="my-4" />
                         )}
                       </div>
@@ -202,16 +144,6 @@ export const VitalsList = () => {
                   })}
                   <Separator className="mt-4" />
 
-                  {vitals.pagination.hasNextPage && (
-                    <div className="mt-4 flex justify-center">
-                      <Button
-                        onClick={handleNextPage}
-                        className="bg-white border-2 border-black text-gray-800 hover:bg-gray-50 px-6 py-2 w-full"
-                      >
-                        Get next page
-                      </Button>
-                    </div>
-                  )}
                 </div>
               )
             )}

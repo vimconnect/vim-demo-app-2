@@ -27,9 +27,12 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
 
   const redirectUrl = new URL(
     context.env.VIM_AUTHORIZE_ENDPOINT ??
-      "https://api.getvim.com/v1/oauth/authorize"
+      "https://api.getvim.ai/app-auth/authorize"
   );
-  redirectUrl.searchParams.append("launch_id", launchId);
+  // The Hub sends `launch_id` inbound; /app-auth/authorize reads `launch`, and
+  // it is optional there — the old name is dropped without an error and the
+  // request silently falls through to standalone auth.
+  redirectUrl.searchParams.append("launch", launchId);
   redirectUrl.searchParams.append("client_id", context.env.CLIENT_ID);
   redirectUrl.searchParams.append("redirect_uri", redirect_uri);
   redirectUrl.searchParams.append("response_type", "code");

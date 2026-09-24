@@ -1,5 +1,5 @@
 import { useForm, useFormContext } from "react-hook-form";
-import { EHR } from "vim-os-js-browser/types";
+import { Referral } from "@vimconnect/app-sdk";
 
 export interface ReferralFormInputs {
   specialty?: string | null;
@@ -11,9 +11,8 @@ export interface ReferralFormInputs {
   reasons?: string | null;
   notes?: string | null;
   numberOfVisits?: number | null;
-  procedureCodes?: { id: string; label: string }[] | null;
   conditions?: { id: string; label: string }[] | null;
-  targetProvider?: EHR.UpdatableProvider | null;
+  targetProvider?: Referral["targetProvider"] | null;
 }
 
 export const useReferralForm = useForm<ReferralFormInputs>;

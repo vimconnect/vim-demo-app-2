@@ -4,7 +4,6 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "../ui/button";
 import { SmallActionButtons } from "../ui/smallActionButtons";
 import { UpdateField } from "../update-fields/types";
-import { useVimOsContext } from "@/hooks/useVimOsContext";
 import { useToast } from "@/hooks/use-toast";
 import { isValueNumber } from "../../utils/isNumberChar";
 
@@ -23,7 +22,6 @@ export const InputField = ({
   const { toast } = useToast();
   const [innerValue, setInnerValue] = useState<string | undefined>(value);
   const [editMode, setEditMode] = useState(false);
-  const vimOs = useVimOsContext();
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -106,7 +104,7 @@ export const InputField = ({
           onCheckClick={() => {
             setEditMode(false);
             if (disabled) {
-              vimOs.utils.copyToClipboard(value ?? "");
+              void navigator.clipboard.writeText(value ?? "");
               toast({
                 variant: "default",
                 title: "Copied to clipboard",

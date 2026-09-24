@@ -19,7 +19,7 @@ export const EncounterBasicInformation = () => {
           <EntityFieldTitle title="Encounter date" />
           <EntityFieldReadonlyText
             text={formatContentDate(
-              encounter?.basicInformation?.encounterDateOfService
+              encounter?.basicInformation?.dateOfService
             )}
           />
         </EntityFieldContent>

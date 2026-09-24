@@ -12,10 +12,10 @@ import {
   EntityFieldReadonlyText,
 } from "../ui/entityContent";
 import { CaretDownIcon } from "@radix-ui/react-icons";
-import { EHR } from "vim-os-js-browser/types";
+import { Diagnosis } from "@vimconnect/app-sdk";
 
 interface ProblemListProps {
-  problems: EHR.PatientDiagnosis[];
+  problems: Diagnosis[];
 }
 
 export const ProblemList = ({ problems }: ProblemListProps) => {
@@ -67,15 +67,9 @@ export const ProblemList = ({ problems }: ProblemListProps) => {
                   </EntityFieldContent>
                   <EntityFieldContent>
                     <EntityFieldTitle title="Onset Date" />
-                    <EntityFieldReadonlyText text={problem.onsetDate || "--"} />
+                    <EntityFieldReadonlyText text={problem.onSetDate || "--"} />
                   </EntityFieldContent>
                 </div>
-                {problem.note && (
-                  <EntityFieldContent>
-                    <EntityFieldTitle title="Notes" />
-                    <EntityFieldReadonlyText text={problem.note || "--"} />
-                  </EntityFieldContent>
-                )}
                 {index < problems.length - 1 && <Separator className="my-2" />}
               </div>
             ))}

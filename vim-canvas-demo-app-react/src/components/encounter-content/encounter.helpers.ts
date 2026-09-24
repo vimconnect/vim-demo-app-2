@@ -1,5 +1,5 @@
 import { FormInputs } from './encounter.form';
-import { EHR } from 'vim-os-js-browser/types';
+import { Encounter } from '@vimconnect/app-sdk';
 import { get, set } from 'lodash-es';
 
 const CODE_FORM_FIELDS = ['diagnosisCodes', 'procedureCodes'];
@@ -15,7 +15,7 @@ export const FORM_DATA_TO_VIM_OS_PATH_MAPPING: Record<keyof FormInputs, string> 
   planGeneralNotes: 'plan.generalNotes',
   patientInstructionsGeneralNotes: 'patientInstructions.generalNotes',
   encounterNotesGeneralNotes: 'encounterNotes.generalNotes',
-  diagnosisCodes: 'assessment.diagnosisCodes',
+  diagnosisCodes: 'assessment.diagnoses',
   procedureCodes: 'billingInformation.procedureCodes',
 };
 
@@ -44,23 +44,18 @@ const removeUndefinedProperties = (obj: unknown) => {
   return result;
 };
 
-export const buildEncounterPayload = (
-  formData: FormInputs,
-  canUpdateNotes: ReturnType<EHR.IResourceUpdater['canUpdateEncounter']> & {
-    canUpdate: boolean;
-  },
-): EHR.UpdateEncounterParams => {
-  const vimOsFields = Object.keys(
-    VIM_OS_PATH_TO_FORM_DATA_MAPPING,
-  ) as (keyof EHR.UpdateEncounterParams)[];
+/**
+ * The legacy per-field updatability map is gone — `getCapability('update')`
+ * answers for the whole entity — so every mapped field the form holds is sent.
+ */
+export const buildEncounterPayload = (formData: FormInputs): Partial<Encounter> => {
+  const vimOsFields = Object.keys(VIM_OS_PATH_TO_FORM_DATA_MAPPING);
 
-  const rawPayload: EHR.UpdateEncounterParams = {};
+  const rawPayload: Partial<Encounter> = {};
 
   vimOsFields.forEach((field) => {
     const formDataName = VIM_OS_PATH_TO_FORM_DATA_MAPPING[field];
-    const formDataValue = get(formData, formDataName);
-
-    const value = get(canUpdateNotes?.details, field) ? formDataValue ?? undefined : undefined;
+    const value = get(formData, formDataName) ?? undefined;
 
     if (CODE_FORM_FIELDS.includes(formDataName)) {
       const mappedCodeValues = value?.map(
@@ -78,24 +73,15 @@ export const buildEncounterPayload = (
 
   const payload = removeUndefinedProperties(rawPayload);
 
-  return payload as EHR.UpdateEncounterParams;
+  return payload as Partial<Encounter>;
 };
 
-/**
- * Prepares the reset object for form reset based on canUpdate permissions
- */
-export const prepareResetFields = (
-  canUpdateNotes: ReturnType<EHR.IResourceUpdater['canUpdateEncounter']> & {
-    canUpdate: boolean;
-  },
-): Partial<FormInputs> => {
+export const prepareResetFields = (): Partial<FormInputs> => {
   const formFields = Object.keys(FORM_DATA_TO_VIM_OS_PATH_MAPPING) as (keyof FormInputs)[];
   const resetData: Partial<FormInputs> = {};
 
   formFields.forEach((field) => {
-    const path = FORM_DATA_TO_VIM_OS_PATH_MAPPING[field];
-    const canUpdateField = path ? get(canUpdateNotes?.details, path) : undefined;
-    resetData[field] = canUpdateField ? null : undefined;
+    resetData[field] = null;
   });
 
   return resetData;

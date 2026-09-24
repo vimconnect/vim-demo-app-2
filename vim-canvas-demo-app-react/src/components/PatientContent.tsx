@@ -15,10 +15,20 @@ import { formatContentDate } from "@/utils/formatContentDate";
 import { PatientEnhancements } from "./patient-enhancements/PatientEnhancements";
 import { VitalsList } from "./patient-pagination-enhancements/VitalsList";
 import { LabResults } from "./patient-pagination-enhancements/LabResults";
+import { Patient } from "@vimconnect/app-sdk";
+
+/** `Patient.fullAddress` is gone; the joined string is the app's to build. */
+const composeAddress = (address: Patient["address"]) =>
+  [address?.address1, address?.address2, address?.city, address?.state, address?.zipCode]
+    .filter((part) => part && part.trim() !== "")
+    .join(", ") || undefined;
 
 export const PatientContent = () => {
   const { jsonMode } = useAppConfig();
   const { patient } = useVimOSPatient();
+  const primaryInsurance =
+    patient?.insurances?.find((insurance) => insurance.isPrimary) ??
+    patient?.insurances?.[0];
 
   return (
     <div className="w-full">
@@ -31,18 +41,16 @@ export const PatientContent = () => {
             <EntityFieldContent>
               <EntityFieldTitle title="EHR patient ID" />
               <EntityFieldReadonlyText
-                text={patient?.identifiers.ehrPatientId}
+                text={patient?.identifiers?.ehrPatientId}
               />
             </EntityFieldContent>
             <EntityFieldContent>
               <EntityFieldTitle title="Vim patient ID" />
-              <EntityFieldReadonlyText
-                text={patient?.identifiers.vimPatientId}
-              />
+              <EntityFieldReadonlyText text={patient?.identifiers?.id} />
             </EntityFieldContent>
             <EntityFieldContent>
               <EntityFieldTitle title="MRN ID" />
-              <EntityFieldReadonlyText text={patient?.identifiers.mrn} />
+              <EntityFieldReadonlyText text={patient?.identifiers?.mrn} />
             </EntityFieldContent>
           </EntitySectionContent>
           <Separator className="mb-1" />
@@ -106,29 +114,29 @@ export const PatientContent = () => {
             </EntityFieldContent>
             <EntityFieldContent>
               <EntityFieldTitle title="Full address" />
-              <EntityFieldReadonlyText text={patient?.address?.fullAddress} />
+              <EntityFieldReadonlyText text={composeAddress(patient?.address)} />
             </EntityFieldContent>
           </EntitySectionContent>
           <Separator className="mb-1" />
           <EntitySectionTitle title="Insurance" />
           <EntitySectionContent>
             <EntityFieldContent>
-              <EntityFieldTitle title="EHR Insurer name" />
+              <EntityFieldTitle title="Payer name" />
               <EntityFieldReadonlyText
-                text={patient?.insurance?.ehrInsurance}
+                text={primaryInsurance?.payerName}
               />
             </EntityFieldContent>
             <EntityFieldContent>
               <EntityFieldTitle title="Group ID" />
-              <EntityFieldReadonlyText text={patient?.insurance?.groupId} />
+              <EntityFieldReadonlyText text={primaryInsurance?.groupId} />
             </EntityFieldContent>
             <EntityFieldContent>
               <EntityFieldTitle title="Payer ID" />
-              <EntityFieldReadonlyText text={patient?.insurance?.payerId} />
+              <EntityFieldReadonlyText text={primaryInsurance?.payerId} />
             </EntityFieldContent>
             <EntityFieldContent>
               <EntityFieldTitle title="Member ID" />
-              <EntityFieldReadonlyText text={patient?.insurance?.memberId} />
+              <EntityFieldReadonlyText text={primaryInsurance?.memberId} />
             </EntityFieldContent>
           </EntitySectionContent>
           <Separator className="mb-1" />
@@ -137,18 +145,18 @@ export const PatientContent = () => {
             <EntityFieldContent>
               <EntityFieldTitle title="Home phone number" />
               <EntityFieldReadonlyText
-                text={patient?.contact_info?.homePhoneNumber}
+                text={patient?.contactInfo?.homePhoneNumber}
               />
             </EntityFieldContent>
             <EntityFieldContent>
               <EntityFieldTitle title="Mobile phone number" />
               <EntityFieldReadonlyText
-                text={patient?.contact_info?.mobilePhoneNumber}
+                text={patient?.contactInfo?.mobilePhoneNumber}
               />
             </EntityFieldContent>
             <EntityFieldContent>
               <EntityFieldTitle title="Email" />
-              <EntityFieldReadonlyText text={patient?.contact_info?.email} />
+              <EntityFieldReadonlyText text={patient?.contactInfo?.email} />
             </EntityFieldContent>
           </EntitySectionContent>
           <Separator className="mb-1" />

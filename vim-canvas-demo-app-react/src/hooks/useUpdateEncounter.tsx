@@ -1,36 +1,59 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Encounter } from "@vimconnect/app-sdk";
 import { useVimOsContext } from "./useVimOsContext";
-import type { EHR } from "vim-os-js-browser/types";
+import { FieldMask, maskToFields } from "./writeback";
 
-export const useUpdateEncounter = (
-  paramsToCheck?: EHR.CanUpdateEncounterParams
-) => {
+/**
+ * `getCapability` on the app surface answers for the whole entity, not per
+ * field, so `canUpdateParams` is entity-level here. The mask is still used —
+ * it scopes the permission request to the fields actually being written.
+ */
+export const useUpdateEncounter = (paramsToCheck?: FieldMask) => {
   const vimOS = useVimOsContext();
+  const fields = useMemo(() => maskToFields(paramsToCheck), [paramsToCheck]);
 
-  const [canUpdateParams, setCanUpdateParams] = useState<boolean>(
-    paramsToCheck
-      ? vimOS.ehr.resourceUpdater.canUpdateEncounter(paramsToCheck).canUpdate
-      : false
-  );
+  const [canUpdateParams, setCanUpdateParams] = useState<boolean>(false);
 
   useEffect(() => {
-    const cb = () =>
+    const refresh = () =>
       setCanUpdateParams(
-        paramsToCheck
-          ? vimOS.ehr.resourceUpdater.canUpdateEncounter(paramsToCheck)
-              .canUpdate
-          : false
+        Boolean(paramsToCheck) &&
+          vimOS.ehr.context.encounter.getCapability("update").available
       );
-    vimOS.ehr.resourceUpdater.subscribe("encounter", cb);
-    return () => vimOS.ehr.resourceUpdater.unsubscribe("encounter", cb);
-  }, [vimOS.ehr, paramsToCheck]);
+
+    refresh();
+    return vimOS.ehr.context.getUpdatableEntities(refresh);
+  }, [vimOS, paramsToCheck]);
+
+  const updateEncounter = useCallback(
+    async (data: Partial<Encounter>) => {
+      const capability = vimOS.ehr.context.encounter.getCapability("update");
+      if (!capability.available) {
+        throw new Error(
+          capability.reason ?? "Encounter writeback is not available"
+        );
+      }
+
+      if (!vimOS.ehr.context.encounter.hasPermission("update")) {
+        const decision = await vimOS.ehr.context.encounter.requestPermission(
+          "update",
+          fields.length ? { fields } : undefined
+        );
+        if (decision !== "granted") {
+          throw new Error("Permission to update the encounter was denied");
+        }
+      }
+
+      return vimOS.ehr.context.encounter.update(data);
+    },
+    [vimOS, fields]
+  );
 
   return useMemo(
     () => ({
       canUpdateParams,
-      canUpdate: vimOS.ehr.resourceUpdater.canUpdateEncounter,
-      updateEncounter: vimOS.ehr.resourceUpdater.updateEncounter,
+      updateEncounter,
     }),
-    [vimOS.ehr.resourceUpdater, canUpdateParams]
+    [canUpdateParams, updateEncounter]
   );
 };

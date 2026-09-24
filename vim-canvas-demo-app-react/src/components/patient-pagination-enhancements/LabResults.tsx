@@ -1,9 +1,9 @@
 import { useState, useCallback } from "react";
 import { Separator } from "../ui/separator";
-import { PaginationProgress } from "../ui/pagination-progress";
 import { Button } from "../ui/button";
 import { EntityFieldTitle, EntityFieldReadonlyText } from "../ui/entityContent";
-import { EHR } from "vim-os-js-browser/types";
+import { LabResult, Pagination } from "@vimconnect/app-sdk";
+import { useVimOsContext } from "@/hooks/useVimOsContext";
 import { PaginationInput } from "./PaginationInput";
 import { useVimOSPatient } from "@/hooks/usePatient";
 import { Collapsible, CollapsibleContent } from "../ui/collapsible";
@@ -11,9 +11,10 @@ import { CollapsibleHeader } from "./CollapsibleHeader";
 
 export const LabResults = () => {
   const { patient } = useVimOSPatient();
+  const vimOS = useVimOsContext();
   const [labResults, setLabResults] = useState<{
-    items: EHR.LabResult[];
-    pagination: EHR.PaginationResponse;
+    items: LabResult[];
+    pagination: Pagination;
   } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | undefined>();
@@ -23,11 +24,15 @@ export const LabResults = () => {
     untilDate: string;
   } | null>(null);
 
+  /**
+   * Cursor pagination: the response carries `hasMore` and a `nextCursor`, and
+   * no totals — there is no page number or item count to show.
+   */
   const fetchData = useCallback(
     async (
       fromDate: string,
       untilDate: string,
-      page: number = 1,
+      cursor?: string,
       append: boolean = false
     ) => {
       if (!patient) return;
@@ -35,60 +40,57 @@ export const LabResults = () => {
       setError(undefined);
       setIsLoading(true);
 
-      if (page === 1) {
+      if (!append) {
         setSearchParams({ fromDate, untilDate });
         setIsOpen(true);
       }
 
       try {
-        const result = await patient.getLabResults({
-          page,
-          fromDate,
-          untilDate,
+        const result = await vimOS.ehr.api.patient.getLabResults({
+          cursor,
+          filters: { fromDate, untilDate },
         });
 
-        if (append) {
-          setLabResults((prev) => {
-            if (!prev || !result) return prev;
+        setLabResults((prev) => {
+          if (append && prev) {
             return {
-              items: [...prev.items, ...(result.items || [])],
-              pagination: result.pagination || prev.pagination,
+              items: [...prev.items, ...(result.data ?? [])],
+              pagination: result.pagination,
             };
-          });
-        } else {
-          setLabResults(result || null);
-        }
+          }
+          return { items: result.data ?? [], pagination: result.pagination };
+        });
       } catch (err) {
         const errorMessage =
           (err as { data?: { message?: string } }).data?.message ===
           "NOT_SUPPORTED_IN_EHR_SYSTEM"
             ? "Lab results is not supported in this EHR system yet."
             : `Failed to fetch ${
-                page === 1 ? "" : "next page of "
+                append ? "next page of " : ""
               }lab results. Please try again.`;
         setError(errorMessage);
       } finally {
         setIsLoading(false);
       }
     },
-    [patient]
+    [patient, vimOS]
   );
 
   const handleActionClick = useCallback(
     async (fromDate: string, untilDate: string) => {
-      await fetchData(fromDate, untilDate, 1, false);
+      await fetchData(fromDate, untilDate, undefined, false);
     },
     [fetchData]
   );
 
   const handleNextPage = useCallback(async () => {
     if (!labResults || !searchParams) return;
+    if (!labResults.pagination.hasMore) return;
 
-    const nextPage = labResults.pagination.currentPage + 1;
     await fetchData(
       searchParams.fromDate,
       searchParams.untilDate,
-      nextPage,
+      labResults.pagination.nextCursor,
       true
     );
   }, [fetchData, labResults, searchParams]);
@@ -122,20 +124,15 @@ export const LabResults = () => {
             ) : (
               labResults && (
                 <div className="w-full">
-                  {labResults.pagination.totalItems > 0 && (
-                    <PaginationProgress
-                      currentPage={labResults.pagination.currentPage}
-                      totalPageNumber={labResults.pagination.totalPages}
-                      totalItems={labResults.pagination.totalItems}
-                      numberOfFetchedItems={labResults.items.length}
-                      enhancement="lab"
-                    />
-                  )}
+                  <p className="text-xs text-muted-foreground mb-2">
+                    {labResults.items.length} lab result
+                    {labResults.items.length === 1 ? "" : "s"} loaded
+                  </p>
 
                   {labResults.items.map((labResult, index) => {
                     const { basicInformation } = labResult;
-                    const { name, cpt, system, resultStatus, resultDate } =
-                      basicInformation;
+                    const { name, cpt, resultStatus, resultDate } =
+                      basicInformation ?? {};
                     const { results } = labResult;
                     return (
                       <div key={name} className="mb-4">
@@ -151,7 +148,7 @@ export const LabResults = () => {
                             <div>
                               <EntityFieldTitle title="Procedure description" />
                               <EntityFieldReadonlyText
-                                text={cpt?.name || "--"}
+                                text={cpt?.description || "--"}
                               />
                             </div>
                           </div>
@@ -161,10 +158,6 @@ export const LabResults = () => {
                               <EntityFieldReadonlyText
                                 text={cpt?.code || "--"}
                               />
-                            </div>
-                            <div>
-                              <EntityFieldTitle title="System" />
-                              <EntityFieldReadonlyText text={system || "--"} />
                             </div>
                           </div>
                           <div className="grid grid-cols-2 gap-4 mt-2">
@@ -187,9 +180,9 @@ export const LabResults = () => {
 
                         <div className="mb-4">
                           <h5 className="text-sm font-bold mb-2">Results</h5>
-                          {results.map((result, resultIndex) => {
+                          {(results ?? []).map((result, resultIndex) => {
                             const isNotLastResult =
-                              resultIndex < results.length - 1;
+                              resultIndex < (results ?? []).length - 1;
 
                             return (
                               <div key={result.value} className="mb-2">
@@ -250,7 +243,7 @@ export const LabResults = () => {
                     );
                   })}
 
-                  {labResults.pagination.hasNextPage && (
+                  {labResults.pagination.hasMore && (
                     <div className="mt-4 flex justify-center">
                       <Button
                         onClick={handleNextPage}

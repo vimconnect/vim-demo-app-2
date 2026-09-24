@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { SDK } from "vim-os-js-browser/types";
-import { loadSdk } from "vim-os-js-browser";
+import { initVimSDK, VimSDK } from "@vimconnect/app-sdk";
 import { Toaster } from "@/components/ui/toaster";
 import {
   VimOSContext,
@@ -8,31 +7,46 @@ import {
   VimOSEncounterProvider,
   VimOSReferralProvider,
   VimOSOrdersProvider,
-  VimOSClaimProvider,
 } from "@/hooks/providers";
 import { AppConfigProvider } from "@/hooks/providers/AppConfigContext";
 
 export const AppWrapper: React.FC<React.PropsWithChildren> = ({ children }) => {
-  const [vimOS, setVimOS] = useState<SDK | undefined>(undefined);
+  const [vimOS, setVimOS] = useState<VimSDK | undefined>(undefined);
+  const [initError, setInitError] = useState<string | undefined>(undefined);
+
   useEffect(() => {
-    (async () => {
-      const vimOsSdk = await loadSdk();
-      setVimOS(vimOsSdk);
-    })();
+    let cancelled = false;
+    initVimSDK()
+      .then((sdk) => {
+        if (!cancelled) setVimOS(sdk);
+      })
+      .catch((error: unknown) => {
+        if (!cancelled) {
+          setInitError(
+            error instanceof Error ? error.message : "Unknown SDK error"
+          );
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
   }, []);
+
+  if (initError) {
+    return <div>Vim SDK failed to load: {initError}</div>;
+  }
 
   if (!vimOS) {
     return <div>Loading VimSDK...</div>;
   }
+
   return (
     <VimOSContext.Provider value={vimOS}>
       <AppConfigProvider>
         <VimOSPatientProvider>
           <VimOSReferralProvider>
             <VimOSOrdersProvider>
-              <VimOSClaimProvider>
-                <VimOSEncounterProvider>{children}</VimOSEncounterProvider>
-              </VimOSClaimProvider>
+              <VimOSEncounterProvider>{children}</VimOSEncounterProvider>
             </VimOSOrdersProvider>
           </VimOSReferralProvider>
         </VimOSPatientProvider>

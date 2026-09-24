@@ -2,7 +2,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useUpdateEncounter } from "@/hooks/useUpdateEncounter";
 import { useUpdateReferral } from "@/hooks/useUpdateReferral";
 import { useCallback, useMemo } from "react";
-import { EHR } from "vim-os-js-browser/types";
+import { Encounter, Referral } from "@vimconnect/app-sdk";
+import { FieldMask } from "@/hooks/writeback";
 import { UpdateField } from "./types";
 
 interface UpdateFieldProps<
@@ -68,8 +69,8 @@ type ReferralUpdateFieldProps<T = unknown> = Pick<
   UpdateFieldProps<T>,
   "render" | "value"
 > & {
-  canUpdateParam: EHR.CanUpdateReferralParams;
-  valueToUpdatePayload: (value: T) => EHR.UpdateReferralParams;
+  canUpdateParam: FieldMask;
+  valueToUpdatePayload: (value: T) => Partial<Referral>;
 };
 
 export function ReferralUpdateField<T = unknown>({
@@ -97,8 +98,8 @@ type EncounterUpdateFieldProps<T = unknown> = Pick<
   UpdateFieldProps<T>,
   "render" | "value"
 > & {
-  canUpdateParam: EHR.CanUpdateEncounterParams;
-  valueToUpdatePayload: (value: T) => EHR.UpdateEncounterParams;
+  canUpdateParam: FieldMask;
+  valueToUpdatePayload: (value: T) => Partial<Encounter>;
 };
 
 export function EncounterUpdateField<T = unknown>({

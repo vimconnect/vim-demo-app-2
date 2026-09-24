@@ -252,7 +252,7 @@ export const ReferralBasicInformation = () => {
           <EntityFieldTitle title="Reasons" />
           <div className="flex justify-center mt-2">
             <ReferralUpdateField<string | undefined>
-              value={referral?.basicInformation?.reasons?.[0]}
+              value={referral?.basicInformation?.reasons}
               canUpdateParam={{
                 basicInformation: {
                   reasons: true,
@@ -260,7 +260,7 @@ export const ReferralBasicInformation = () => {
               }}
               valueToUpdatePayload={(value) => ({
                 basicInformation: {
-                  reasons: value ? [value] : [],
+                  reasons: value ?? "",
                 },
               })}
               render={({ field }) => (
@@ -271,9 +271,7 @@ export const ReferralBasicInformation = () => {
                   onTextareaSubmit={field.onChange}
                   disabled={field.disabled}
                   clearAfterChange
-                  prefixAdornment={referral?.basicInformation?.reasons?.join(
-                    ", "
-                  )}
+                  prefixAdornment={referral?.basicInformation?.reasons}
                 />
               )}
             />

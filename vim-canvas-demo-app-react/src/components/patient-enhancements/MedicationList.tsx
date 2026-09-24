@@ -12,10 +12,10 @@ import {
   EntityFieldReadonlyText,
 } from "../ui/entityContent";
 import { CaretDownIcon } from "@radix-ui/react-icons";
-import { EHR } from "vim-os-js-browser/types";
+import { Medication } from "@vimconnect/app-sdk";
 
 interface MedicationListProps {
-  medications: EHR.PatientMedication[];
+  medications: Medication[];
 }
 
 export const MedicationList = ({ medications }: MedicationListProps) => {
@@ -49,20 +49,20 @@ export const MedicationList = ({ medications }: MedicationListProps) => {
                 <EntityFieldContent>
                   <EntityFieldTitle title="Medication name" />
                   <EntityFieldReadonlyText
-                    text={medication.basicInformation?.medicationName || "--"}
+                    text={medication.medicationName || "--"}
                   />
                 </EntityFieldContent>
                 <div className="grid grid-cols-2 gap-4">
                   <EntityFieldContent>
                     <EntityFieldTitle title="NDC code" />
                     <EntityFieldReadonlyText
-                      text={medication.basicInformation?.ndcCode || "--"}
+                      text={medication.ndcCode || "--"}
                     />
                   </EntityFieldContent>
                   <EntityFieldContent>
                     <EntityFieldTitle title="Strength" />
                     <EntityFieldReadonlyText
-                      text={medication.dosage?.strength?.value || "--"}
+                      text={medication.strength || "--"}
                     />
                   </EntityFieldContent>
                 </div>
@@ -70,20 +70,20 @@ export const MedicationList = ({ medications }: MedicationListProps) => {
                   <EntityFieldContent>
                     <EntityFieldTitle title="Form" />
                     <EntityFieldReadonlyText
-                      text={medication.dosage?.form?.unit || "--"}
+                      text={medication.form || "--"}
                     />
                   </EntityFieldContent>
                   <EntityFieldContent>
                     <EntityFieldTitle title="Status" />
                     <EntityFieldReadonlyText
-                      text={medication.basicInformation?.status || "--"}
+                      text={medication.status || "--"}
                     />
                   </EntityFieldContent>
                 </div>
                 <EntityFieldContent>
-                  <EntityFieldTitle title="Added date" />
+                  <EntityFieldTitle title="Recorded date" />
                   <EntityFieldReadonlyText
-                    text={medication.addedDate || "--"}
+                    text={medication.recordedDate || "--"}
                   />
                 </EntityFieldContent>
                 {index < medications.length - 1 && (

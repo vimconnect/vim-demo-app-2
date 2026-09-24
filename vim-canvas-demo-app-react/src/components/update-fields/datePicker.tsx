@@ -12,7 +12,6 @@ import { cn } from "@/lib/utils";
 import { UpdateField } from "./types";
 import { useEffect, useState } from "react";
 import { SmallActionButtons } from "../ui/smallActionButtons";
-import { useVimOsContext } from "@/hooks/useVimOsContext";
 import { useToast } from "@/hooks/use-toast";
 
 const safeFormat = (date: Date) => {
@@ -38,7 +37,6 @@ export function DatePicker({
   hideActionButtons = false,
 }: DatePickerProps) {
   const { toast } = useToast();
-  const vimOs = useVimOsContext();
   const [innerValue, setInnerValue] = useState<Date | undefined>(
     value ? parseISO(value) : undefined
   );
@@ -101,7 +99,7 @@ export function DatePicker({
             setIsOpen(false);
             if (disabled) {
               const dateText = innerValue ? safeFormat(innerValue) : "";
-              vimOs.utils.copyToClipboard(dateText);
+              void navigator.clipboard.writeText(dateText);
               toast({
                 variant: "default",
                 title: "Copied to clipboard",

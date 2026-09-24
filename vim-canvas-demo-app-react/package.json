@@ -25,6 +25,7 @@
     "@radix-ui/react-switch": "^1.1.0",
     "@radix-ui/react-toast": "^1.2.1",
     "@radix-ui/react-tooltip": "^1.1.2",
+    "@vimconnect/app-sdk": "^0.4.58",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
     "css-filter-converter": "^1.0.110",
@@ -40,8 +41,7 @@
     "react-router-dom": "^7.2.0",
     "tailwind-merge": "^2.5.2",
     "tailwindcss-animate": "^1.0.7",
-    "vim-app-settings": "^1.0.0",
-    "vim-os-js-browser": "^2.0.19"
+    "vim-app-settings": "^1.0.0"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20240821.1",

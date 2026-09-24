@@ -57,11 +57,7 @@ export const AppConfigProvider: React.FC<React.PropsWithChildren> = ({
       }
     };
     syncNotifications();
-    vimOs.hub.appState.subscribe("appOpenStatus", syncNotifications);
-
-    return () => {
-      vimOs.hub.appState.unsubscribe("appOpenStatus", syncNotifications);
-    };
+    return vimOs.hub.appState.subscribe("appOpenStatus", syncNotifications);
   }, [vimOs, notifications]);
 
   return (

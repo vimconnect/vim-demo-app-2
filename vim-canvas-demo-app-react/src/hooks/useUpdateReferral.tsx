@@ -1,35 +1,59 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Referral } from "@vimconnect/app-sdk";
 import { useVimOsContext } from "./useVimOsContext";
-import type { EHR } from "vim-os-js-browser/types";
+import { FieldMask, maskToFields } from "./writeback";
 
-export const useUpdateReferral = (
-  paramsToCheck?: EHR.CanUpdateReferralParams
-) => {
+/**
+ * `getCapability` on the app surface answers for the whole entity, not per
+ * field, so `canUpdateParams` is entity-level here. The mask is still used —
+ * it scopes the permission request to the fields actually being written.
+ */
+export const useUpdateReferral = (paramsToCheck?: FieldMask) => {
   const vimOS = useVimOsContext();
+  const fields = useMemo(() => maskToFields(paramsToCheck), [paramsToCheck]);
 
-  const [canUpdateParams, setCanUpdateParams] = useState<boolean>(
-    paramsToCheck
-      ? vimOS.ehr.resourceUpdater.canUpdateReferral(paramsToCheck).canUpdate
-      : false
-  );
+  const [canUpdateParams, setCanUpdateParams] = useState<boolean>(false);
 
   useEffect(() => {
-    const cb = () =>
+    const refresh = () =>
       setCanUpdateParams(
-        paramsToCheck
-          ? vimOS.ehr.resourceUpdater.canUpdateReferral(paramsToCheck).canUpdate
-          : false
+        Boolean(paramsToCheck) &&
+          vimOS.ehr.context.referral.getCapability("update").available
       );
-    vimOS.ehr.resourceUpdater.subscribe("referral", cb);
-    return () => vimOS.ehr.resourceUpdater.unsubscribe("referral", cb);
-  }, [vimOS.ehr, paramsToCheck]);
+
+    refresh();
+    return vimOS.ehr.context.getUpdatableEntities(refresh);
+  }, [vimOS, paramsToCheck]);
+
+  const updateReferral = useCallback(
+    async (data: Partial<Referral>) => {
+      const capability = vimOS.ehr.context.referral.getCapability("update");
+      if (!capability.available) {
+        throw new Error(
+          capability.reason ?? "Referral writeback is not available"
+        );
+      }
+
+      if (!vimOS.ehr.context.referral.hasPermission("update")) {
+        const decision = await vimOS.ehr.context.referral.requestPermission(
+          "update",
+          fields.length ? { fields } : undefined
+        );
+        if (decision !== "granted") {
+          throw new Error("Permission to update the referral was denied");
+        }
+      }
+
+      return vimOS.ehr.context.referral.update(data);
+    },
+    [vimOS, fields]
+  );
 
   return useMemo(
     () => ({
       canUpdateParams,
-      canUpdate: vimOS.ehr.resourceUpdater.canUpdateReferral,
-      updateReferral: vimOS.ehr.resourceUpdater.updateReferral,
+      updateReferral,
     }),
-    [vimOS.ehr.resourceUpdater, canUpdateParams]
+    [canUpdateParams, updateReferral]
   );
 };

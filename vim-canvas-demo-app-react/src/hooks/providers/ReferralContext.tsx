@@ -1,10 +1,10 @@
 import { createContext, useEffect, useState } from "react";
-import { EHR } from "vim-os-js-browser/types";
+import { Referral } from "@vimconnect/app-sdk";
 import { useVimOsContext } from "../useVimOsContext";
 import { useAppConfig } from "../useAppConfig";
 
 interface ReferralContext {
-  referral: EHR.Referral | undefined;
+  referral: Partial<Referral> | undefined;
 }
 
 export const VimOSReferralContext = createContext<ReferralContext>({
@@ -16,18 +16,20 @@ export const VimOSReferralProvider: React.FC<React.PropsWithChildren> = ({
 }) => {
   const { updateNotification } = useAppConfig();
   const vimOS = useVimOsContext();
-  const [referral, setReferral] = useState<EHR.Referral | undefined>(undefined);
+  const [referral, setReferral] = useState<Partial<Referral> | undefined>(
+    undefined
+  );
 
   useEffect(() => {
-    vimOS.ehr.subscribe("referral", (data) => {
-      setReferral(data);
-      updateNotification("referral", data ? 1 : 0);
-    });
+    return vimOS.ehr.context.onChange(
+      "referral_start:referral",
+      (_previous, current) => setReferral(current?.fields)
+    );
+  }, [vimOS]);
 
-    return () => {
-      vimOS.ehr.unsubscribe("referral", setReferral);
-    };
-  }, [vimOS, updateNotification]);
+  useEffect(() => {
+    updateNotification("referral", referral ? 1 : 0);
+  }, [referral, updateNotification]);
 
   return (
     <VimOSReferralContext.Provider

@@ -1,8 +1,8 @@
 import { ReferralFormInputs } from "./referral.form";
-import { EHR } from "vim-os-js-browser/types";
+import { Referral } from "@vimconnect/app-sdk";
 import { get, set, isEmpty, isNil } from "lodash-es";
 
-const CODE_FORM_FIELDS = ["procedureCodes", "conditions"];
+const CODE_FORM_FIELDS = ["conditions"];
 
 export const FORM_DATA_TO_VIM_OS_PATH_MAPPING: Record<
   keyof ReferralFormInputs,
@@ -18,8 +18,7 @@ export const FORM_DATA_TO_VIM_OS_PATH_MAPPING: Record<
   notes: "basicInformation.notes",
   numberOfVisits: "basicInformation.numberOfVisits",
   targetProvider: "targetProvider",
-  procedureCodes: "procedureCodes.cpts",
-  conditions: "conditions.diagnosis",
+  conditions: "conditions",
 };
 
 const VIM_OS_PATH_TO_FORM_DATA_MAPPING = Object.fromEntries(
@@ -52,12 +51,10 @@ const removeUndefinedProperties = (obj: unknown) => {
 
 export const buildReferralPayload = (
   formData: ReferralFormInputs
-): EHR.UpdateReferralParams => {
-  const vimOsFields = Object.keys(
-    VIM_OS_PATH_TO_FORM_DATA_MAPPING
-  ) as (keyof EHR.UpdateReferralParams)[];
+): Partial<Referral> => {
+  const vimOsFields = Object.keys(VIM_OS_PATH_TO_FORM_DATA_MAPPING);
 
-  const rawPayload: EHR.UpdateReferralParams = {};
+  const rawPayload: Partial<Referral> = {};
 
   vimOsFields.forEach((field) => {
     const formDataName = VIM_OS_PATH_TO_FORM_DATA_MAPPING[field];
@@ -73,8 +70,6 @@ export const buildReferralPayload = (
           }))
         : undefined;
       value = mappedCodeValues;
-    } else if (formDataName === "reasons" && formDataValue) {
-      value = [formDataValue];
     } else if (formDataName === "priority" && formDataValue) {
       value = formDataValue as "ROUTINE" | "URGENT" | "STAT";
     } else {
@@ -86,7 +81,7 @@ export const buildReferralPayload = (
 
   const payload = removeUndefinedProperties(rawPayload);
 
-  return payload as EHR.UpdateReferralParams;
+  return payload as Partial<Referral>;
 };
 
 export const prepareResetFields = (): Partial<ReferralFormInputs> => {
