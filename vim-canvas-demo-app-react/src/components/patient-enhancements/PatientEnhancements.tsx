@@ -4,14 +4,34 @@ import { useVimOSPatient } from "@/hooks/usePatient";
 import { ProblemList } from "./ProblemList";
 import { MedicationList } from "./MedicationList";
 import { AllergyList } from "./AllergyList";
-import { Allergy, Diagnosis, Medication } from "@vimconnect/app-sdk";
+import { InsuranceList } from "./InsuranceList";
+import { Allergy, Diagnosis, Insurance, Medication } from "@vimconnect/app-sdk";
 import { useVimOsContext } from "@/hooks/useVimOsContext";
 import { capitalize } from "@/lib/utils";
 import { Loading } from "../ui/loading";
 
-type EnhancementName = "problem list" | "medication list" | "allergy list";
+type EnhancementName =
+  | "problem list"
+  | "medication list"
+  | "allergy list"
+  | "insurances";
 
-type EnhancementFunction = "getProblems" | "getMedications" | "getAllergies";
+type EnhancementFunction =
+  | "getProblems"
+  | "getMedications"
+  | "getAllergies"
+  | "getInsurances";
+
+/**
+ * `ehr.api` is typed `Record<string, any>`, so the `{ success, data }` envelope
+ * is declared but never enforced at runtime — an operation may resolve to the
+ * bare array instead. Read through both rather than trusting the type.
+ */
+const asList = <T,>(result: unknown): T[] => {
+  if (Array.isArray(result)) return result as T[];
+  const data = (result as { data?: unknown } | null)?.data;
+  return Array.isArray(data) ? (data as T[]) : [];
+};
 
 type Enhancement = {
   name: EnhancementName;
@@ -31,6 +51,10 @@ const enhancements: Enhancement[] = [
     name: "allergy list",
     function: "getAllergies",
   },
+  {
+    name: "insurances",
+    function: "getInsurances",
+  },
 ];
 
 export const PatientEnhancements = () => {
@@ -41,6 +65,7 @@ export const PatientEnhancements = () => {
       "problem list": Diagnosis[];
       "medication list": Medication[];
       "allergy list": Allergy[];
+      insurances: Insurance[];
     }>
   >({});
   const [loadingStates, setLoadingStates] = useState<
@@ -69,19 +94,25 @@ export const PatientEnhancements = () => {
           const result = await vimOS.ehr.api.patient.getProblems();
           setEnhancementResult((prev) => ({
             ...prev,
-            "problem list": result.data ?? [],
+            "problem list": asList<Diagnosis>(result),
           }));
         } else if (enhancement.function === "getMedications") {
           const result = await vimOS.ehr.api.patient.getMedications();
           setEnhancementResult((prev) => ({
             ...prev,
-            "medication list": result.data ?? [],
+            "medication list": asList<Medication>(result),
           }));
         } else if (enhancement.function === "getAllergies") {
           const result = await vimOS.ehr.api.patient.getAllergies();
           setEnhancementResult((prev) => ({
             ...prev,
-            "allergy list": result.data ?? [],
+            "allergy list": asList<Allergy>(result),
+          }));
+        } else if (enhancement.function === "getInsurances") {
+          const result = await vimOS.ehr.api.patient.getInsurances();
+          setEnhancementResult((prev) => ({
+            ...prev,
+            insurances: asList<Insurance>(result),
           }));
         } else {
           throw new Error(
@@ -138,6 +169,10 @@ export const PatientEnhancements = () => {
                     </p>
                   </div>
                 </div>
+              ) : enhancementResult[enhancement.name]?.length === 0 ? (
+                <p className="text-xs text-muted-foreground">
+                  No {enhancement.name} returned for this patient.
+                </p>
               ) : (
                 <>
                   {enhancement.name === "problem list" &&
@@ -157,6 +192,10 @@ export const PatientEnhancements = () => {
                       <AllergyList
                         allergies={enhancementResult["allergy list"]}
                       />
+                    )}
+                  {enhancement.name === "insurances" &&
+                    enhancementResult.insurances && (
+                      <InsuranceList insurances={enhancementResult.insurances} />
                     )}
                 </>
               )}

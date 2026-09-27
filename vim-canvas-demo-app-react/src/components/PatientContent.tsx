@@ -26,9 +26,6 @@ const composeAddress = (address: Patient["address"]) =>
 export const PatientContent = () => {
   const { jsonMode } = useAppConfig();
   const { patient } = useVimOSPatient();
-  const primaryInsurance =
-    patient?.insurances?.find((insurance) => insurance.isPrimary) ??
-    patient?.insurances?.[0];
 
   return (
     <div className="w-full">
@@ -115,28 +112,6 @@ export const PatientContent = () => {
             <EntityFieldContent>
               <EntityFieldTitle title="Full address" />
               <EntityFieldReadonlyText text={composeAddress(patient?.address)} />
-            </EntityFieldContent>
-          </EntitySectionContent>
-          <Separator className="mb-1" />
-          <EntitySectionTitle title="Insurance" />
-          <EntitySectionContent>
-            <EntityFieldContent>
-              <EntityFieldTitle title="Payer name" />
-              <EntityFieldReadonlyText
-                text={primaryInsurance?.payerName}
-              />
-            </EntityFieldContent>
-            <EntityFieldContent>
-              <EntityFieldTitle title="Group ID" />
-              <EntityFieldReadonlyText text={primaryInsurance?.groupId} />
-            </EntityFieldContent>
-            <EntityFieldContent>
-              <EntityFieldTitle title="Payer ID" />
-              <EntityFieldReadonlyText text={primaryInsurance?.payerId} />
-            </EntityFieldContent>
-            <EntityFieldContent>
-              <EntityFieldTitle title="Member ID" />
-              <EntityFieldReadonlyText text={primaryInsurance?.memberId} />
             </EntityFieldContent>
           </EntitySectionContent>
           <Separator className="mb-1" />
