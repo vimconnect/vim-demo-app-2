@@ -25,12 +25,17 @@ type EnhancementFunction =
 /**
  * `ehr.api` is typed `Record<string, any>`, so the `{ success, data }` envelope
  * is declared but never enforced at runtime — an operation may resolve to the
- * bare array instead. Read through both rather than trusting the type.
+ * bare array instead. Read through both, and say which happened: an empty list
+ * the EHR really returned and a response shape we failed to read look identical
+ * on screen otherwise.
  */
-const asList = <T,>(result: unknown): T[] => {
-  if (Array.isArray(result)) return result as T[];
-  const data = (result as { data?: unknown } | null)?.data;
-  return Array.isArray(data) ? (data as T[]) : [];
+const asList = <T,>(
+  result: unknown
+): { items: T[]; recognised: boolean } => {
+  if (Array.isArray(result)) return { items: result as T[], recognised: true };
+  const data = (result as { data?: unknown } | null | undefined)?.data;
+  if (Array.isArray(data)) return { items: data as T[], recognised: true };
+  return { items: [], recognised: false };
 };
 
 type Enhancement = {
@@ -56,6 +61,13 @@ const enhancements: Enhancement[] = [
     function: "getInsurances",
   },
 ];
+
+/** Thrown when the operation resolved but the payload was not a list we could read. */
+class UnreadableResponseError extends Error {}
+
+/** The raw payload, so the shape can be inspected when a result looks empty. */
+const reportRawResult = (operation: string, result: unknown) =>
+  console.info(`[vim-demo] ehr.api.patient.${operation}() ->`, result);
 
 export const PatientEnhancements = () => {
   const { patient } = useVimOSPatient();
@@ -92,27 +104,39 @@ export const PatientEnhancements = () => {
       try {
         if (enhancement.function === "getProblems") {
           const result = await vimOS.ehr.api.patient.getProblems();
+          reportRawResult("getProblems", result);
+          const { items, recognised } = asList<Diagnosis>(result);
+          if (!recognised) throw new UnreadableResponseError();
           setEnhancementResult((prev) => ({
             ...prev,
-            "problem list": asList<Diagnosis>(result),
+            "problem list": items,
           }));
         } else if (enhancement.function === "getMedications") {
           const result = await vimOS.ehr.api.patient.getMedications();
+          reportRawResult("getMedications", result);
+          const { items, recognised } = asList<Medication>(result);
+          if (!recognised) throw new UnreadableResponseError();
           setEnhancementResult((prev) => ({
             ...prev,
-            "medication list": asList<Medication>(result),
+            "medication list": items,
           }));
         } else if (enhancement.function === "getAllergies") {
           const result = await vimOS.ehr.api.patient.getAllergies();
+          reportRawResult("getAllergies", result);
+          const { items, recognised } = asList<Allergy>(result);
+          if (!recognised) throw new UnreadableResponseError();
           setEnhancementResult((prev) => ({
             ...prev,
-            "allergy list": asList<Allergy>(result),
+            "allergy list": items,
           }));
         } else if (enhancement.function === "getInsurances") {
           const result = await vimOS.ehr.api.patient.getInsurances();
+          reportRawResult("getInsurances", result);
+          const { items, recognised } = asList<Insurance>(result);
+          if (!recognised) throw new UnreadableResponseError();
           setEnhancementResult((prev) => ({
             ...prev,
-            insurances: asList<Insurance>(result),
+            insurances: items,
           }));
         } else {
           throw new Error(
@@ -121,8 +145,12 @@ export const PatientEnhancements = () => {
         }
       } catch (error) {
         const errorMessage =
-          (error as { data?: { message?: string } }).data?.message ===
-          "NOT_SUPPORTED_IN_EHR_SYSTEM" //not supported
+          error instanceof UnreadableResponseError
+            ? `${capitalize(
+                enhancement.name
+              )} returned a response this app could not read — see the console for the raw payload.`
+            : (error as { data?: { message?: string } }).data?.message ===
+              "NOT_SUPPORTED_IN_EHR_SYSTEM" //not supported
             ? `${capitalize(
                 enhancement.name
               )} is not supported in this EHR system yet.`
@@ -171,7 +199,7 @@ export const PatientEnhancements = () => {
                 </div>
               ) : enhancementResult[enhancement.name]?.length === 0 ? (
                 <p className="text-xs text-muted-foreground">
-                  No {enhancement.name} returned for this patient.
+                  The EHR returned an empty {enhancement.name} for this patient.
                 </p>
               ) : (
                 <>
