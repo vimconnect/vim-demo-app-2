@@ -14,6 +14,26 @@ import {
 import { CaretDownIcon } from "@radix-ui/react-icons";
 import { Medication } from "@vimconnect/app-sdk";
 
+/**
+ * `MedicationSchema` declares every field flat, but the collection delivers
+ * medicationName, ndcCode, status and recordedDate inside `basicInformation`
+ * while leaving form, frequency and strength at the top level. Read both.
+ */
+type DeliveredMedication = Medication & {
+  basicInformation?: Partial<
+    Pick<Medication, "medicationName" | "ndcCode" | "status" | "recordedDate">
+  >;
+};
+
+const field = <K extends keyof Medication>(
+  medication: DeliveredMedication,
+  key: K
+): Medication[K] | undefined =>
+  medication[key] ??
+  (medication.basicInformation?.[
+    key as keyof DeliveredMedication["basicInformation"]
+  ] as Medication[K] | undefined);
+
 interface MedicationListProps {
   medications: Medication[];
 }
@@ -49,20 +69,20 @@ export const MedicationList = ({ medications }: MedicationListProps) => {
                 <EntityFieldContent>
                   <EntityFieldTitle title="Medication name" />
                   <EntityFieldReadonlyText
-                    text={medication.medicationName || "--"}
+                    text={field(medication, "medicationName") || "--"}
                   />
                 </EntityFieldContent>
                 <div className="grid grid-cols-2 gap-4">
                   <EntityFieldContent>
                     <EntityFieldTitle title="NDC code" />
                     <EntityFieldReadonlyText
-                      text={medication.ndcCode || "--"}
+                      text={field(medication, "ndcCode") || "--"}
                     />
                   </EntityFieldContent>
                   <EntityFieldContent>
                     <EntityFieldTitle title="Strength" />
                     <EntityFieldReadonlyText
-                      text={medication.strength || "--"}
+                      text={field(medication, "strength") || "--"}
                     />
                   </EntityFieldContent>
                 </div>
@@ -70,20 +90,28 @@ export const MedicationList = ({ medications }: MedicationListProps) => {
                   <EntityFieldContent>
                     <EntityFieldTitle title="Form" />
                     <EntityFieldReadonlyText
-                      text={medication.form || "--"}
+                      text={field(medication, "form") || "--"}
                     />
                   </EntityFieldContent>
                   <EntityFieldContent>
                     <EntityFieldTitle title="Status" />
                     <EntityFieldReadonlyText
-                      text={medication.status || "--"}
+                      text={field(medication, "status") || "--"}
+                    />
+                  </EntityFieldContent>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <EntityFieldContent>
+                    <EntityFieldTitle title="Frequency" />
+                    <EntityFieldReadonlyText
+                      text={field(medication, "frequency") || "--"}
                     />
                   </EntityFieldContent>
                 </div>
                 <EntityFieldContent>
                   <EntityFieldTitle title="Recorded date" />
                   <EntityFieldReadonlyText
-                    text={medication.recordedDate || "--"}
+                    text={field(medication, "recordedDate") || "--"}
                   />
                 </EntityFieldContent>
                 {index < medications.length - 1 && (
