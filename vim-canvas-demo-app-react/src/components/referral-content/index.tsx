@@ -25,7 +25,7 @@ import {
 } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useUpdateReferral } from "@/hooks/useUpdateReferral";
-import { FieldMask } from "@/hooks/writeback";
+import { FieldMask, describeError } from "@/hooks/writeback";
 import { Button } from "../ui/button";
 import {
   buildReferralPayload,
@@ -97,7 +97,7 @@ export const ReferralContent = () => {
         toast({
           variant: "destructive",
           title: "Uh oh! Something went wrong.",
-          description: error ? JSON.stringify(error) : "An error occurred.",
+          description: describeError(error),
         });
       })
       .finally(() => {

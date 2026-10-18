@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Encounter } from "@vimconnect/app-sdk";
 import { useVimOsContext } from "./useVimOsContext";
-import { FieldMask, maskToFields } from "./writeback";
+import { FieldMask, assertWritten, maskToFields } from "./writeback";
 
 /**
  * `getCapability` on the app surface answers for the whole entity, not per
@@ -44,7 +44,7 @@ export const useUpdateEncounter = (paramsToCheck?: FieldMask) => {
         }
       }
 
-      return vimOS.ehr.context.encounter.update(data);
+      return assertWritten(data, await vimOS.ehr.context.encounter.update(data));
     },
     [vimOS, fields]
   );

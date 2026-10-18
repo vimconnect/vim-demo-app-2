@@ -5,7 +5,7 @@ import { useAppConfig } from "@/hooks/useAppConfig";
 import { useVimOSEncounter } from "@/hooks/useEncounter";
 import { useUpdateEncounter } from "@/hooks/useUpdateEncounter";
 import { FormProvider, useWatch } from "react-hook-form";
-import { FieldMask } from "@/hooks/writeback";
+import { FieldMask, describeError } from "@/hooks/writeback";
 import { ProviderSection } from "../Provider";
 import { Button } from "../ui/button";
 import {
@@ -117,7 +117,7 @@ export const EncounterContent = () => {
         toast({
           variant: "destructive",
           title: "Uh oh! Something went wrong.",
-          description: error ? JSON.stringify(error) : "An error occurred.",
+          description: describeError(error),
         });
       });
 

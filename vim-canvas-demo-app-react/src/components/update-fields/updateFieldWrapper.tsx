@@ -3,7 +3,7 @@ import { useUpdateEncounter } from "@/hooks/useUpdateEncounter";
 import { useUpdateReferral } from "@/hooks/useUpdateReferral";
 import { useCallback, useMemo } from "react";
 import { Encounter, Referral } from "@vimconnect/app-sdk";
-import { FieldMask } from "@/hooks/writeback";
+import { FieldMask, describeError } from "@/hooks/writeback";
 import { UpdateField } from "./types";
 
 interface UpdateFieldProps<
@@ -44,7 +44,7 @@ function EntityUpdateField<
           toast({
             variant: "destructive",
             title: "Uh oh! Something went wrong.",
-            description: error ? JSON.stringify(error) : "An error occurred.",
+            description: describeError(error),
           });
         });
     },
