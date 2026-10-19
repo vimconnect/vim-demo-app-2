@@ -11,7 +11,6 @@ import {
 } from '../ui/entityContent';
 import { JSONView } from '../ui/jsonView';
 import { Separator } from '../ui/separator';
-import { ProviderSection } from '../Provider';
 import { formatContentDate } from '@/utils/formatContentDate';
 
 interface OrderContentProps {
@@ -117,9 +116,15 @@ export const OrderContent: React.FC<OrderContentProps> = ({ order }) => {
               <Separator className="mb-1" />
             </>
           )}
-          {order?.orderingProvider && (
+          {order?.orderingProviderId && (
             <>
-              <ProviderSection provider={order.orderingProvider} title="Ordering Provider" />
+              <EntitySectionTitle title="Ordering Provider" />
+              <EntitySectionContent>
+                <EntityFieldContent>
+                  <EntityFieldTitle title="Provider ID" />
+                  <EntityFieldReadonlyText text={order.orderingProviderId} />
+                </EntityFieldContent>
+              </EntitySectionContent>
             </>
           )}
         </>

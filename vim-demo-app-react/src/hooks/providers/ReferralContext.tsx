@@ -22,7 +22,7 @@ export const VimSdkReferralProvider: React.FC<React.PropsWithChildren> = ({
 
   useEffect(() => {
     return vimSdk.ehr.context.onChange(
-      "referral_start:referral",
+      "referral_open:referral",
       (_previous, current) => setReferral(current?.fields)
     );
   }, [vimSdk]);

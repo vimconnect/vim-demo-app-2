@@ -309,7 +309,7 @@ export const ReferralBasicInformation = () => {
         <EntityFieldContent>
           <EntityFieldTitle title="Facility name" />
           <EntityFieldReadonlyText
-            text={referral?.basicInformation?.facilityName}
+            text={referral?.targetFacility?.name}
           />
         </EntityFieldContent>
         <EntityFieldContent>
