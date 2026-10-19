@@ -3,7 +3,8 @@ import { Env } from "../context-env";
 
 /**
  * The JWKS is not served from the issuer's host, so `parseJwt` cannot discover
- * it from `iss`. It is fetched here and handed over explicitly.
+ * it from `iss`. It is fetched here and handed over explicitly. Staging serves
+ * its own keys, so set `VIM_JWKS_URL` when pointing at the staging backend.
  */
 const VIM_JWKS_URL = "https://api.getvim.ai/app-auth/.well-known/jwks.json";
 
@@ -43,7 +44,8 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       !(await isAuthorized(
         tokenData,
         context.env.CLIENT_ID,
-        context.env.VIM_ISSUER
+        context.env.VIM_ISSUER,
+        context.env.VIM_JWKS_URL
       ))
     ) {
       return new Response("", {
@@ -61,7 +63,8 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 async function isAuthorized(
   vimTokenData,
   clientId: string,
-  vimIssuer = "https://connect.getvim.ai"
+  vimIssuer = "https://connect.getvim.ai",
+  jwksUrl = VIM_JWKS_URL
 ) {
   try {
     const decodedIdToken = await parseJwt({
@@ -69,7 +72,7 @@ async function isAuthorized(
       issuer: vimIssuer,
       audience: clientId,
       resolveKey: async ({ header }) => {
-        const jwks = await fetch(VIM_JWKS_URL).then(
+        const jwks = await fetch(jwksUrl).then(
           (response) => response.json() as Promise<{ keys: JsonWebKey[] }>
         );
         const jwk = jwks.keys.find(

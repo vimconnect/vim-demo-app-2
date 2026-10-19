@@ -51,6 +51,7 @@ Set these in `vim-demo-app-react/.dev.vars` (git-ignored). Wrangler loads them i
 | `VIM_AUTHORIZE_ENDPOINT` | No | Overrides the authorize URL (default `https://api.getvim.ai/app-auth/authorize`) |
 | `VIM_TOKEN_ENDPOINT` | No | Overrides the token URL (default `https://api.getvim.ai/app-auth/token`) |
 | `VIM_ISSUER` | No | Expected `iss` of the ID token (default `https://connect.getvim.ai`) |
+| `VIM_JWKS_URL` | No | Where the ID token's signing keys are fetched (default `https://api.getvim.ai/app-auth/.well-known/jwks.json`) |
 | `CLIENT_SECRET_FALLBACK` | No | A second secret tried when the first is rejected, for rotating secrets without downtime |
 
 ## Vim Console Setup
