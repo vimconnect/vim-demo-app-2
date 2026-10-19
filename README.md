@@ -1,128 +1,123 @@
-# Vim Canvas™️ Demo App (React)
+# Vim Connect Demo App 2
 
-![Cloudflare](https://img.shields.io/badge/Cloudflare-F38020?style=for-the-badge&logo=Cloudflare&logoColor=white) ![TypeScript](https://img.shields.io/badge/typescript-%23007ACC.svg?style=for-the-badge&logo=typescript&logoColor=white)
- ![Vite](https://img.shields.io/badge/vite-%23646CFF.svg?style=for-the-badge&logo=vite&logoColor=white)
-![React](https://img.shields.io/badge/react-%2320232a.svg?style=for-the-badge&logo=react&logoColor=%2361DAFB) ![Radix UI](https://img.shields.io/badge/radix%20ui-161618.svg?style=for-the-badge&logo=radix-ui&logoColor=white) ![TailwindCSS](https://img.shields.io/badge/tailwindcss-%2338B2AC.svg?style=for-the-badge&logo=tailwind-css&logoColor=white)
+[![npm version](https://img.shields.io/npm/v/@vimconnect/app-sdk.svg)](https://www.npmjs.com/package/@vimconnect/app-sdk)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-<img src='https://static.getvim.com/img/vim-canvas-landing.png?v=2' width='100%' >
+A second reference implementation for the [Vim Connect App SDK](https://developer-docs.getvim.ai/docs), built as a React + Vite single-page app with [Cloudflare Pages Functions](https://developers.cloudflare.com/pages/functions/) for the OAuth endpoints. It walks through the EHR one entity at a time — user, patient, encounter, referral, and orders — and shows how to read each one and write encounter and referral changes back to the EHR.
 
-## Quick Links
+Use [vim-demo-app](https://github.com/vimconnect/vim-demo-app) when you want the Next.js template with the SDK Explorer. Use this one when you want a Vite/React SPA with serverless auth, or a worked example of form-based writeback.
 
-* [Vim Canvas™️ Developer Platform](https://getvim.com/vim-canvas-developer-platform/)
-* [Vim Canvas™️ Docs](https://docs.getvim.com/)
-* [VimOS.js Canvas™️ SDK](https://www.npmjs.com/package/vim-os-js-browser)
-
-## What is Vim Canvas™️?
-Vim is the middleware platform for healthcare. Vim Canvas™️ is a self-service platform that empowers application developers to embed their application into Electronic Health Record (EHR) workflows, resulting in a streamlined and low-friction experience for end users. With Vim, you can deploy your applications on top of Vim Connect - Vim's in-EHR connectivity layer - accelerating time to market at reduced cost and improved flexibility.
-
-# Repo Overview 😎
-
-This repo contains example projects for building applications on top of Vim Canvas™️.
-The applications in different frameworks demonstrates how to use the VimOS.js Canvas™️ SDK to interact with the Vim Canvas™️ platform. The app showcases the following features:
-
-* Authentication with Vim Canvas™️
-* Embedding an application into the Vim Canvas™️ platform
-* Viewing EHR entities, including
-  * Patients
-  * Encounters
-  * Referrals
-  * Orders
-* Updating EHR entities, including
-  * Encounters
-  * Referrals
-
-## Vim Canvas™️ Demo App (React)
-
-Under the `vim-canvas-demo-app-react` we have a project that uses cloudflare pages to host the Vim Canvas™️ Demo App built with React & also the serverless service needed for the authentication flow.
-
-The app is built with `vite` and `react` and uses `shadcn`, `radix-ui`,`tailwindcss` for the UI components, and Cloudfare for back end authentication flow. 
-These are only front end and back end libraries or languages that are used as examples in the demo app. 
-You can use Vim OS SDK in any front or back end language or libraries you are currently using if you already have an application.
-
-
-### Folder Structure
-
-* `functions` - Contains [cloudflare pages functions](https://developers.cloudflare.com/pages/functions/) for the authentication flow.
-* `src/components/ui` - Contains UI components generated with [Shadcn](https://ui.shadcn.com/).
-* `src/hooks` - Contains custom hooks for the application, including hooks that wrap the VimOS.js Canvas™️ SDK - [following the docs examples](https://docs.getvim.com/vim-os-js/reactjs.html#react-integration-guide-for-vimos.js).
-
-### Running the example code
-
-#### Prerequisites
-In order to see the demo code in action, you must first configure an application in the [Vim Canvas™️ Developer Platform](https://console.getvim.com/organization-admin/).
-
-If you don’t have a Vim Canvas™️ developer account yet, register [here](https://getvim.com/vim-canvas-developer-platform/) to gain access.
-
-> ❕ **You don't need a cloudflare user / account** to run the app locally.
-
-#### Installation
-
-To install and run the app locally, follow these steps:
-
-1. Clone the repository:
+## Quick Start
 
 ```bash
-git clone https://github.com/getvim/vim-canvas-demo-app.git
-```
+# 1. Clone
+git clone https://github.com/vimconnect/vim-demo-app-2.git
+cd vim-demo-app-2/vim-demo-app-react
 
-2. Navigate to the project directory:
-
-```bash
-cd vim-canvas-demo-app-react
-```
-
-3. Install the dependencies:
-
-```bash
+# 2. Install
 npm install
-```
 
-4. Create a `.dev.vars` file with the following content:
-
-```.env
-CLIENT_ID=<<YOU ACCOUNT CLIENT ID>>
-CLIENT_SECRET=<<YOUR ACCOUNT CLIENT SECRET>>
+# 3. Configure
+cat > .dev.vars <<'EOF'
+CLIENT_ID=<your client ID>
+CLIENT_SECRET=<your client secret>
 REDIRECT_URL=http://localhost:8788
-```
+EOF
 
-5. Start the development server:
-
-```bash
+# 4. Run
 npm run dev
 ```
 
-> This will start both the backend at `http://localhost:8788` and the frontend at `http://localhost:3000`. <br>
-The backend will proxy the frontend - **making both API & frontend available at `http://localhost:8788`**.
+App runs at [http://localhost:8788](http://localhost:8788). `npm run dev` starts Vite on port 5173 and Wrangler on port 8788; Wrangler serves the `/api/*` functions and proxies everything else to Vite, so use port 8788 everywhere.
 
-6. Follow up on [Testing Your Application](https://docs.getvim.com/testing/creating-application.html#create-your-canvas-application) in the official docs
+You don't need a Cloudflare account to run the app locally.
 
-### Authentication Flow
+## Prerequisites
 
-The `functions` folder is a cloudflare pages function that handles the authentication flow for the app.
+- **Node.js** 20 (see [`.nvmrc`](.nvmrc))
+- **Vim Connect Chrome extension** installed ([setup guide](https://developer-docs.getvim.ai/docs/getting-started#prerequisites))
+- **Vim Connect account** with an app created in the Vim Console
+- **OAuth credentials** (client ID + client secret) from the [Vim Console](https://developer-docs.getvim.ai/docs/developer-account#getting-your-client-id-and-secret)
 
-When running locally the api server starts at `http://localhost:8788` & exposes the following endpoints:
-* `/api/launch` - This endpoint is used to initiate the authentication flow.
-* `/api/token` - This endpoint is used to handle the callback from the Vim Canvas™️ platform to create a token.
+## Environment Variables
 
-## Settings Application Demo
+Set these in `vim-demo-app-react/.dev.vars` (git-ignored). Wrangler loads them into the functions.
 
-On top of using VimOS.js to integrate your application's iframe within Vim Connect and display it in the Vim Hub on EHRs, you can also inject an additional optional iframe into the Vim Console. This allows you to create a dedicated Settings Application where organization administrators can customize and configure your main application.
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `CLIENT_ID` | Yes | Your OAuth client ID |
+| `CLIENT_SECRET` | Yes | Your OAuth client secret (server-side only) |
+| `REDIRECT_URL` | No | Where Vim returns the provider after authorization. Defaults to `http://localhost:8788`; must be listed in the manifest's **Allowed iframe URLs** |
+| `VIM_AUTHORIZE_ENDPOINT` | No | Overrides the authorize URL (default `https://api.getvim.ai/app-auth/authorize`) |
+| `VIM_TOKEN_ENDPOINT` | No | Overrides the token URL (default `https://api.getvim.ai/app-auth/token`) |
+| `VIM_ISSUER` | No | Expected `iss` of the ID token (default `https://connect.getvim.ai`) |
+| `CLIENT_SECRET_FALLBACK` | No | A second secret tried when the first is rejected, for rotating secrets without downtime |
 
-This settings application is implemented under `/settings` route.
+## Vim Console Setup
 
-[For further information](https://docs.getvim.com/platform/platform.html#app-settings)
+In your app's manifest (or a local environment override):
 
-# Vim Canvas™️ Pricing
+| Field | Value for local development |
+|-------|-----------------------------|
+| **Launch Endpoint** | `http://localhost:8788/api/launch` |
+| **Token Endpoint** | `http://localhost:8788/api/token` |
+| **Allowed iframe URLs** | `http://localhost:8788` |
 
-| Starter Access | Patient-Based | User-Based |
-| --- | --- | --- |
-| **Design and test your application before choosing a plan.** | **Active Member Pricing (AMP) Billed Based on Per Member Per Month (PMPM)** | **Per User Per Month (PUPM)** |
-| *Who is this right for?* | *Who is this right for?* | *Who is this right for?* |
-| - Access to developer platform<br>- Ability to build application using Vim workflows<br>- Design and testing only. Activation and distribution of application requires a package | - Patient-based pricing model in use or applicable to workflow<br>- Application is enabled based on patient in context in the EHR<br>- Allows for unlimited clinic-level users | - User-based pricing model in use or applicable to application<br>- Application is always available and is not specific to patients<br>- Based on number of users/year for which the application is enabled |
-| | Example:<br>A mental health referral solution | Example:<br>An efficiency solution such as a medical documentation tool |
+On the **App UX** tab, enable **Badge Notification Label** and **Push Notification**. On the **EHR** tab, declare the patient, encounter, referral, and order fields you want to see, the patient API operations (problems, medications, allergies, insurances, lab results, vitals), and update access to encounters and referrals if you want to try writeback. See [Filling in the manifest](https://developer-docs.getvim.ai/docs/developer-account#filling-in-the-manifest).
 
-# Contributing
-* How can I submit an improvement?
-    * Improvements are always welcomed! 🥳 Open a PR with a proper description and we'll review it as soon as possible
-* Spot a bug 🕷 ?
-    * We welcome code changes that improve the apps or fix a problem. Please make sure to follow all best practices and open an "Issue" and we'll review it as soon as possible.
+## What This Demo Shows
+
+- **OAuth 2.0 flow** — `/api/launch` redirects to Vim's authorize endpoint; `/api/token` exchanges the code server-side and verifies the ID token against Vim's JWKS
+- **SDK initialization** — `initVimSDK()` with a configured token endpoint, so the SDK fetches its own access token
+- **EHR context** — Patient, encounter, and referral from `ehr.context.onChange`, with the patient held across the chart-to-encounter transition
+- **Workflow events** — Orders collected from `order_select` and `order_sign`
+- **Entity API** — Problems, medications, allergies, insurances, lab results (with date-range paging), and vitals for the patient in context
+- **Writeback** — Edit SOAP notes, diagnoses, procedure codes, and referral details, then write them to the EHR through the capability and permission checks
+- **Hub controls** — Activation status, push notification, notification badge, and `closeApp()`
+- **Session context** — The Vim user, account, and EHR type, plus the ID token
+- **Organization settings** — An optional `/settings` page that stores a theme color per organization in a Cloudflare D1 table
+
+## Project Structure
+
+```
+vim-demo-app-react/
+├── functions/api/
+│   ├── launch.ts               # Launch endpoint (redirects to Vim authorize)
+│   ├── token.ts                # Token endpoint (code exchange + ID token check)
+│   └── settings.ts             # Per-organization settings (D1)
+├── sql/settings.sql            # Settings table schema
+└── src/
+    ├── AppWrapper.tsx          # SDK initialization and context providers
+    ├── App.tsx                 # Main app: one card per EHR entity
+    ├── hooks/                  # SDK hooks (context, writeback, ID token)
+    ├── hooks/providers/        # Patient, encounter, referral, orders state
+    └── components/             # Entity views, update forms, and shadcn/ui components
+```
+
+To keep the theme color between local runs, create the settings table once:
+
+```bash
+npx wrangler d1 execute DB --local --file=sql/settings.sql
+```
+
+## Documentation
+
+- [Vim Connect App SDK Documentation](https://developer-docs.getvim.ai/docs)
+- [`@vimconnect/app-sdk` on npm](https://www.npmjs.com/package/@vimconnect/app-sdk)
+- [OAuth Integration Guide](https://developer-docs.getvim.ai/docs/authentication)
+- [EHR Support Matrix](https://developer-docs.getvim.ai/docs/ehr-support)
+
+## Scripts
+
+Run from `vim-demo-app-react/`.
+
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Start Vite (port 5173) and the Wrangler functions proxy (port 8788) |
+| `npm run build` | Type-check and build for production |
+| `npm run lint` | Run ESLint |
+| `npm run preview` | Preview the production build |
+
+## License
+
+[MIT](LICENSE)

@@ -1,0 +1,147 @@
+import { useAppConfig } from "@/hooks/useAppConfig";
+import { usePatient } from "@/hooks/usePatient";
+import { JSONView } from "./ui/jsonView";
+import { Separator } from "./ui/separator";
+import {
+  EntityFieldContent,
+  EntityFieldReadonlyText,
+  EntityFieldTitle,
+  EntitySectionContent,
+  EntitySectionTitle,
+} from "./ui/entityContent";
+import { ProviderSection } from "./Provider";
+import { capitalize } from "@/lib/utils";
+import { formatContentDate } from "@/utils/formatContentDate";
+import { PatientEnhancements } from "./patient-enhancements/PatientEnhancements";
+import { VitalsList } from "./patient-pagination-enhancements/VitalsList";
+import { LabResults } from "./patient-pagination-enhancements/LabResults";
+import { Patient } from "@vimconnect/app-sdk";
+
+/** `Patient.fullAddress` is gone; the joined string is the app's to build. */
+const composeAddress = (address: Patient["address"]) =>
+  [address?.address1, address?.address2, address?.city, address?.state, address?.zipCode]
+    .filter((part) => part && part.trim() !== "")
+    .join(", ") || undefined;
+
+export const PatientContent = () => {
+  const { jsonMode } = useAppConfig();
+  const { patient } = usePatient();
+
+  return (
+    <div className="w-full">
+      {jsonMode ? (
+        <JSONView value={patient} />
+      ) : (
+        <>
+          <EntitySectionTitle title="Identifiers" />
+          <EntitySectionContent>
+            <EntityFieldContent>
+              <EntityFieldTitle title="EHR patient ID" />
+              <EntityFieldReadonlyText
+                text={patient?.identifiers?.ehrPatientId}
+              />
+            </EntityFieldContent>
+            <EntityFieldContent>
+              <EntityFieldTitle title="Vim patient ID" />
+              <EntityFieldReadonlyText text={patient?.identifiers?.id} />
+            </EntityFieldContent>
+            <EntityFieldContent>
+              <EntityFieldTitle title="MRN ID" />
+              <EntityFieldReadonlyText text={patient?.identifiers?.mrn} />
+            </EntityFieldContent>
+          </EntitySectionContent>
+          <Separator className="mb-1" />
+          <EntitySectionTitle title="Demographics" />
+          <EntitySectionContent>
+            <EntityFieldContent>
+              <EntityFieldTitle title="First name" />
+              <EntityFieldReadonlyText
+                text={patient?.demographics?.firstName}
+              />
+            </EntityFieldContent>
+            <EntityFieldContent>
+              <EntityFieldTitle title="Middle name" />
+              <EntityFieldReadonlyText
+                text={patient?.demographics?.middleName}
+              />
+            </EntityFieldContent>
+            <EntityFieldContent>
+              <EntityFieldTitle title="Last name" />
+              <EntityFieldReadonlyText text={patient?.demographics?.lastName} />
+            </EntityFieldContent>
+            <EntityFieldContent>
+              <EntityFieldTitle title="Date of birth" />
+              <EntityFieldReadonlyText
+                text={formatContentDate(patient?.demographics?.dateOfBirth)}
+              />
+            </EntityFieldContent>
+            <EntityFieldContent>
+              <EntityFieldTitle title="Gender" />
+              <EntityFieldReadonlyText
+                text={
+                  patient?.demographics?.gender
+                    ? capitalize(patient?.demographics?.gender)
+                    : undefined
+                }
+              />
+            </EntityFieldContent>
+          </EntitySectionContent>
+          <Separator className="mb-1" />
+          <EntitySectionTitle title="Address" />
+          <EntitySectionContent>
+            <EntityFieldContent>
+              <EntityFieldTitle title="Address line 1" />
+              <EntityFieldReadonlyText text={patient?.address?.address1} />
+            </EntityFieldContent>
+            <EntityFieldContent>
+              <EntityFieldTitle title="Address line 2" />
+              <EntityFieldReadonlyText text={patient?.address?.address2} />
+            </EntityFieldContent>
+            <EntityFieldContent>
+              <EntityFieldTitle title="City" />
+              <EntityFieldReadonlyText text={patient?.address?.city} />
+            </EntityFieldContent>
+            <EntityFieldContent>
+              <EntityFieldTitle title="State" />
+              <EntityFieldReadonlyText text={patient?.address?.state} />
+            </EntityFieldContent>
+            <EntityFieldContent>
+              <EntityFieldTitle title="Zip" />
+              <EntityFieldReadonlyText text={patient?.address?.zipCode} />
+            </EntityFieldContent>
+            <EntityFieldContent>
+              <EntityFieldTitle title="Full address" />
+              <EntityFieldReadonlyText text={composeAddress(patient?.address)} />
+            </EntityFieldContent>
+          </EntitySectionContent>
+          <Separator className="mb-1" />
+          <EntitySectionTitle title="Contact" />
+          <EntitySectionContent>
+            <EntityFieldContent>
+              <EntityFieldTitle title="Home phone number" />
+              <EntityFieldReadonlyText
+                text={patient?.contactInfo?.homePhoneNumber}
+              />
+            </EntityFieldContent>
+            <EntityFieldContent>
+              <EntityFieldTitle title="Mobile phone number" />
+              <EntityFieldReadonlyText
+                text={patient?.contactInfo?.mobilePhoneNumber}
+              />
+            </EntityFieldContent>
+            <EntityFieldContent>
+              <EntityFieldTitle title="Email" />
+              <EntityFieldReadonlyText text={patient?.contactInfo?.email} />
+            </EntityFieldContent>
+          </EntitySectionContent>
+          <Separator className="mb-1" />
+          <ProviderSection provider={patient?.pcp} title="Provider" />
+          <Separator className="mb-1" />
+          <PatientEnhancements />
+          <LabResults />
+          <VitalsList />
+        </>
+      )}
+    </div>
+  );
+};
